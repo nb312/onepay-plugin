@@ -1,0 +1,95 @@
+/**
+ * OnePay Blocks Checkout Styles
+ */
+
+/* Payment method selection for blocks checkout */
+.wc-block-components-radio-control .onepay-payment-methods {
+    margin: 15px 0;
+}
+
+.wc-block-components-radio-control .onepay-method-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.wc-block-components-radio-control .onepay-payment-method {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.wc-block-components-radio-control .onepay-payment-method:hover {
+    border-color: #007cba;
+    background-color: #f7f7f7;
+}
+
+.wc-block-components-radio-control .onepay-payment-method.selected {
+    border-color: #007cba;
+    background-color: #e7f3ff;
+}
+
+.wc-block-components-radio-control .onepay-payment-method input[type="radio"] {
+    margin-right: 10px;
+    margin-top: 2px;
+}
+
+.wc-block-components-radio-control .onepay-payment-method .method-info {
+    flex: 1;
+}
+
+.wc-block-components-radio-control .onepay-payment-method .method-info strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+    color: #333;
+}
+
+.wc-block-components-radio-control .onepay-payment-method .method-description {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Editor preview styles */
+.onepay-payment-methods.preview {
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    text-align: center;
+    color: #666;
+}
+
+.onepay-payment-methods.preview p {
+    margin: 0 0 10px 0;
+    font-weight: bold;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .wc-block-components-radio-control .onepay-payment-method {
+        padding: 10px;
+    }
+    
+    .wc-block-components-radio-control .onepay-payment-method .method-info strong {
+        font-size: 13px;
+    }
+    
+    .wc-block-components-radio-control .onepay-payment-method .method-description {
+        font-size: 11px;
+    }
+}
+
+/* Fix for WooCommerce blocks radio control integration */
+.wc-block-components-radio-control-accordion-option .onepay-payment-methods {
+    margin-top: 0;
+}
+
+.wc-block-components-radio-control-accordion-option .onepay-method-selection {
+    margin-top: 10px;
+}

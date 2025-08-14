@@ -1,0 +1,32 @@
+{
+  "name": "onepay-payment-gateway",
+  "version": "1.0.0",
+  "description": "OnePay payment gateway for WooCommerce with Blocks support",
+  "main": "assets/js/onepay-blocks.js",
+  "scripts": {
+    "build": "wp-scripts build assets/js/onepay-blocks.js --output-path=assets/js/",
+    "start": "wp-scripts start assets/js/onepay-blocks.js --output-path=assets/js/",
+    "dev": "wp-scripts start"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^26.0.0"
+  },
+  "dependencies": {
+    "@wordpress/element": "^5.0.0",
+    "@wordpress/html-entities": "^3.0.0",
+    "@wordpress/i18n": "^4.0.0",
+    "@woocommerce/blocks-registry": "^8.0.0",
+    "@woocommerce/settings": "^1.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "externals": {
+    "@wordpress/element": "wp.element",
+    "@wordpress/html-entities": "wp.htmlEntities",
+    "@wordpress/i18n": "wp.i18n",
+    "@woocommerce/blocks-registry": "wc.wcBlocksRegistry",
+    "@woocommerce/settings": "wc.wcSettings",
+    "react": "React",
+    "react-dom": "ReactDOM"
+  }
+}

@@ -1,0 +1,15 @@
+<svg width="48" height="32" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="32" rx="4" fill="url(#ru_card_gradient)"/>
+  <rect x="6" y="10" width="36" height="4" fill="white" opacity="0.3"/>
+  <rect x="6" y="18" width="20" height="2" fill="white" opacity="0.5"/>
+  <rect x="30" y="18" width="8" height="2" fill="white" opacity="0.5"/>
+  <circle cx="10" cy="8" r="2" fill="#FFD700"/>
+  <circle cx="38" cy="8" r="2" fill="#FFD700"/>
+  <defs>
+    <linearGradient id="ru_card_gradient" x1="0" y1="0" x2="48" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0051A5"/>
+      <stop offset="0.5" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D52B1E"/>
+    </linearGradient>
+  </defs>
+</svg>

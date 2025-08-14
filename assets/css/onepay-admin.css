@@ -1,0 +1,186 @@
+/**
+ * OnePay Admin Styles
+ */
+
+.onepay-admin-section {
+    margin: 20px 0;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+}
+
+.onepay-admin-section h3 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.onepay-key-field textarea {
+    width: 100%;
+    height: 150px;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.onepay-test-connection {
+    margin: 10px 0;
+}
+
+.onepay-test-connection button {
+    background: #0073aa;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.onepay-test-connection button:hover {
+    background: #005a87;
+}
+
+.onepay-test-connection button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.onepay-status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.onepay-status-indicator.connected {
+    background-color: #46b450;
+}
+
+.onepay-status-indicator.disconnected {
+    background-color: #dc3232;
+}
+
+.onepay-logs {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.onepay-log-entry {
+    margin: 5px 0;
+    padding: 5px;
+    border-left: 3px solid #0073aa;
+    background: white;
+}
+
+.onepay-log-entry.error {
+    border-left-color: #dc3232;
+}
+
+.onepay-log-entry.warning {
+    border-left-color: #ffb900;
+}
+
+.onepay-transaction-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.onepay-transaction-table th,
+.onepay-transaction-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.onepay-transaction-table th {
+    background: #f9f9f9;
+    font-weight: bold;
+}
+
+.onepay-valid-key {
+    border-color: #46b450 !important;
+    background-color: #f0fff0 !important;
+}
+
+.onepay-invalid-key {
+    border-color: #dc3232 !important;
+    background-color: #fff0f0 !important;
+}
+
+.onepay-admin-buttons {
+    margin: 15px 0;
+}
+
+.onepay-admin-buttons button {
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+
+.onepay-status-section {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+}
+
+.onepay-status-section h4 {
+    margin-top: 0;
+    color: #333;
+}
+
+.onepay-webhook-url {
+    background: #f0f0f0;
+    padding: 10px;
+    border-left: 4px solid #0073aa;
+    margin: 10px 0;
+    font-family: monospace;
+    word-break: break-all;
+}
+
+.onepay-logs h5 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.onepay-log-entry {
+    padding: 5px 10px;
+    margin: 3px 0;
+    border-left: 3px solid #ddd;
+    background: #f9f9f9;
+    font-size: 12px;
+    font-family: monospace;
+    line-height: 1.4;
+}
+
+.onepay-log-entry.info {
+    border-left-color: #0073aa;
+}
+
+.onepay-log-entry.warning {
+    border-left-color: #ffb900;
+    background: #fff8e1;
+}
+
+.onepay-log-entry.error {
+    border-left-color: #dc3232;
+    background: #ffeaea;
+}
+
+.onepay-log-entry.critical {
+    border-left-color: #dc3232;
+    background: #ffebee;
+    font-weight: bold;
+}
+
+.onepay-log-entry .log-level {
+    color: #666;
+    font-weight: bold;
+}

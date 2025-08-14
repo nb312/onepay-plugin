@@ -1,0 +1,385 @@
+/**
+ * OnePay Cards Payment Modern UI Styles
+ * 现代化信用卡支付界面样式
+ */
+
+/* 支付方式选择器样式 */
+.payment_method_onepay_cards,
+.payment_method_onepay_fps,
+.payment_method_onepay_russian_card {
+    position: relative;
+    margin-bottom: 1.5em !important;
+}
+
+.payment_method_onepay_cards label.radio,
+.payment_method_onepay_fps label.radio,
+.payment_method_onepay_russian_card label.radio {
+    display: flex !important;
+    align-items: center;
+    padding: 15px 20px;
+    background: #fff;
+    border: 2px solid #e3e4e8;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.payment_method_onepay_cards label.radio:hover,
+.payment_method_onepay_fps label.radio:hover,
+.payment_method_onepay_russian_card label.radio:hover {
+    border-color: #5469d4;
+    background: #f8f9ff;
+}
+
+/* 选中状态 */
+.payment_method_onepay_cards input[type="radio"]:checked + label,
+.payment_method_onepay_fps input[type="radio"]:checked + label,
+.payment_method_onepay_russian_card input[type="radio"]:checked + label {
+    border-color: #5469d4;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+/* 卡片图标容器 */
+.onepay-card-icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.onepay-card-icon,
+.onepay-payment-icon,
+.onepay-bank-icon {
+    height: 24px;
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(0);
+    transition: filter 0.3s ease;
+}
+
+/* 鼠标悬停时高亮图标 */
+.payment_method_onepay_cards label.radio:hover .onepay-card-icon {
+    filter: grayscale(0) brightness(1.1);
+}
+
+/* 信用卡输入表单 */
+.onepay-cards-form {
+    padding: 25px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 16px;
+    margin-top: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* 现代卡片式表单 */
+.onepay-form-modern {
+    position: relative;
+}
+
+.onepay-form-modern::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    background: linear-gradient(45deg, #f093fb, #f5576c, #4facfe, #00f2fe);
+    border-radius: 20px;
+    opacity: 0.3;
+    z-index: -1;
+    filter: blur(20px);
+}
+
+/* 安全标识 */
+.onepay-security-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 20px;
+    color: #065f46;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.onepay-security-badge .lock-icon {
+    color: #10b981;
+}
+
+/* 表单组 */
+.onepay-form-group {
+    margin-bottom: 20px;
+}
+
+.onepay-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1f36;
+}
+
+.onepay-form-group .required {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
+/* 输入框样式 */
+.onepay-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: white;
+    border: 2px solid #e3e8ef;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.onepay-input:focus {
+    border-color: #5469d4;
+    box-shadow: 0 0 0 4px rgba(84, 105, 212, 0.1);
+}
+
+.onepay-input::placeholder {
+    color: #a0aec0;
+}
+
+/* 卡号输入特殊样式 */
+.onepay-input-wrapper {
+    position: relative;
+}
+
+#onepay_card_number {
+    padding-right: 60px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+}
+
+/* 卡类型显示 */
+.onepay-card-type {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 4px 8px;
+    background: #f0f4f8;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.onepay-card-type.visa {
+    background: linear-gradient(135deg, #1a1f71, #2938a5);
+    color: white;
+}
+
+.onepay-card-type.mastercard {
+    background: linear-gradient(135deg, #eb001b, #f79e1b);
+    color: white;
+}
+
+.onepay-card-type.amex {
+    background: linear-gradient(135deg, #006fcf, #4d8bcc);
+    color: white;
+}
+
+.onepay-card-type.discover {
+    background: linear-gradient(135deg, #ff6000, #ffa348);
+    color: white;
+}
+
+.onepay-card-type.jcb {
+    background: linear-gradient(135deg, #0e4c96, #3e7cb8);
+    color: white;
+}
+
+/* 表单行 */
+.onepay-form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.onepay-form-group-half {
+    flex: 1;
+}
+
+/* CVV提示 */
+.onepay-cvv-hint {
+    display: inline-flex;
+    align-items: center;
+    cursor: help;
+    color: #6b7280;
+}
+
+.onepay-cvv-hint svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 支持的卡片展示 */
+.onepay-supported-cards {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.onepay-supported-cards .supported-text {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.onepay-supported-card-icon {
+    height: 20px;
+    width: auto;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+.onepay-supported-card-icon.active {
+    opacity: 1;
+}
+
+/* 极简风格 */
+.onepay-form-minimal {
+    background: white;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+    box-shadow: none;
+}
+
+.onepay-form-minimal .onepay-input {
+    border: none;
+    border-bottom: 2px solid #e5e7eb;
+    border-radius: 0;
+    padding-left: 0;
+    padding-right: 0;
+    background: transparent;
+}
+
+.onepay-form-minimal .onepay-input:focus {
+    border-bottom-color: #5469d4;
+    box-shadow: none;
+}
+
+/* 经典表单风格 */
+.onepay-form-classic {
+    background: #f9fafb;
+    padding: 20px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+}
+
+.onepay-form-classic .onepay-input {
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+}
+
+/* 加载状态 */
+.onepay-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.onepay-loading::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #5469d4;
+    border-radius: 50%;
+    animation: onepay-spin 1s linear infinite;
+}
+
+@keyframes onepay-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 错误提示 */
+.onepay-error {
+    padding: 12px 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #991b1b;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+    .onepay-cards-form {
+        padding: 20px 15px;
+    }
+    
+    .onepay-form-row {
+        flex-direction: column;
+    }
+    
+    .onepay-card-icons {
+        flex-wrap: wrap;
+        max-width: 120px;
+    }
+    
+    .onepay-supported-cards {
+        flex-wrap: wrap;
+    }
+}
+
+/* 动画效果 */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.onepay-cards-form {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* 暗色主题兼容 */
+@media (prefers-color-scheme: dark) {
+    .onepay-cards-form {
+        background: linear-gradient(135deg, #1a1f36 0%, #2d3748 100%);
+    }
+    
+    .onepay-input {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: white;
+    }
+    
+    .onepay-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    .onepay-form-group label {
+        color: #e2e8f0;
+    }
+    
+    .onepay-security-badge {
+        background: rgba(52, 211, 153, 0.2);
+        border-color: rgba(52, 211, 153, 0.4);
+        color: #34d399;
+    }
+}

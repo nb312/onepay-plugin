@@ -1,0 +1,163 @@
+/**
+ * OnePay Frontend Styles
+ */
+
+.payment_method_onepay .payment_box {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.onepay-payment-methods {
+    margin: 10px 0;
+}
+
+.onepay-payment-method {
+    display: block;
+    margin: 5px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.onepay-payment-method:hover {
+    background-color: #f0f0f0;
+}
+
+.onepay-payment-method input[type="radio"] {
+    margin-right: 10px;
+}
+
+.onepay-payment-method .method-info {
+    display: flex;
+    align-items: center;
+}
+
+.onepay-payment-method .method-description {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 5px;
+}
+
+.onepay-loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+}
+
+.onepay-error {
+    color: #d94f4f;
+    background: #ffeaea;
+    border: 1px solid #d94f4f;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+/* 国际卡支付表单样式 */
+#onepay_international_card_fields {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+#onepay_international_card_fields h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.1em;
+}
+
+#onepay_international_card_fields .form-row {
+    margin-bottom: 15px;
+}
+
+#onepay_international_card_fields label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555;
+}
+
+#onepay_international_card_fields input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+#onepay_international_card_fields input[type="text"]:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+/* 卡类型指示器 */
+#onepay_card_type {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+#onepay_card_type .card-visa {
+    background: #1a1f71;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+#onepay_card_type .card-mastercard {
+    background: #eb001b;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+#onepay_card_type .card-amex {
+    background: #006fcf;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+#onepay_card_type .card-discover {
+    background: #ff6000;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+#onepay_card_type .card-jcb {
+    background: #0e4c96;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* 安全标识 */
+#onepay_international_card_fields::before {
+    content: "🔒 安全加密传输";
+    display: block;
+    text-align: right;
+    font-size: 0.85em;
+    color: #28a745;
+    margin-bottom: 10px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    #onepay_international_card_fields .form-row-first,
+    #onepay_international_card_fields .form-row-last {
+        width: 100%;
+        float: none;
+    }
+}
