@@ -80,34 +80,51 @@ class OnePay_Tester {
         // Test private key validation
         $tests['private_key_valid'] = OnePay_Signature::validate_key($this->gateway->private_key, 'private');
         
-        // Test public key validation
-        $tests['public_key_valid'] = OnePay_Signature::validate_key($this->gateway->platform_public_key, 'public');
+        // Test platform public key validation
+        $tests['platform_public_key_valid'] = OnePay_Signature::validate_key($this->gateway->platform_public_key, 'public');
         
-        // Test signature generation and verification
+        // Test signature generation using merchant private key
         $test_data = '{"merchantNo":"' . $this->gateway->merchant_no . '","orderAmount":"1000","currency":"RUB"}';
         
         if ($tests['private_key_valid']) {
             $signature = OnePay_Signature::sign($test_data, $this->gateway->private_key);
             $tests['signature_generation'] = !empty($signature);
             
-            if ($tests['signature_generation'] && $tests['public_key_valid']) {
-                $tests['signature_verification'] = OnePay_Signature::verify($test_data, $signature, $this->gateway->platform_public_key);
-            } else {
-                $tests['signature_verification'] = false;
-            }
+            // 注意：我们无法验证商户私钥生成的签名，因为我们没有对应的商户公钥
+            // 商户公钥是提供给平台的，我们这里只有平台公钥
+            // 所以这个测试只能测试签名生成，不能测试验证
+            $tests['signature_verification'] = 'N/A - 需要商户公钥进行验证';
         } else {
             $tests['signature_generation'] = false;
             $tests['signature_verification'] = false;
         }
         
-        $passed = array_filter($tests);
+        // 测试平台公钥的格式和可用性
+        if ($tests['platform_public_key_valid']) {
+            // 我们可以测试平台公钥是否能正确加载，但无法完整测试验证功能
+            // 因为我们没有平台私钥生成的测试签名
+            $tests['platform_key_usable'] = true;
+        } else {
+            $tests['platform_key_usable'] = false;
+        }
+        
+        // 计算通过的测试（排除verification，因为它需要成对密钥）
+        $countable_tests = array(
+            'private_key_valid' => $tests['private_key_valid'],
+            'platform_public_key_valid' => $tests['platform_public_key_valid'],
+            'signature_generation' => $tests['signature_generation'],
+            'platform_key_usable' => $tests['platform_key_usable']
+        );
+        
+        $passed = array_filter($countable_tests);
         
         return array(
             'passed' => count($passed),
-            'failed' => count($tests) - count($passed),
-            'total' => count($tests),
+            'failed' => count($countable_tests) - count($passed),
+            'total' => count($countable_tests),
             'details' => $tests,
-            'success' => count($passed) === count($tests)
+            'note' => '签名验证需要成对的密钥。商户私钥配对商户公钥，平台私钥配对平台公钥。',
+            'success' => count($passed) === count($countable_tests)
         );
     }
     

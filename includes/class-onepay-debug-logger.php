@@ -336,9 +336,9 @@ class OnePay_Debug_Logger {
             'request_data' => is_array($callback_data) ? json_encode($callback_data, JSON_UNESCAPED_UNICODE) : $callback_data,
             'response_data' => json_encode(array('signature_valid' => $signature_valid, 'message' => $message), JSON_UNESCAPED_UNICODE),
             'response_code' => $order_status,
-            'error_message' => $signature_valid ? null : $message,
+            'error_message' => ($signature_valid === true) ? null : (($signature_valid === 'pending') ? null : $message),
             'execution_time' => null,
-            'status' => $signature_valid ? 'received' : 'signature_failed',
+            'status' => ($signature_valid === true) ? 'received' : (($signature_valid === 'pending') ? 'pending_verification' : 'signature_failed'),
             'extra_data' => json_encode(array(
                 'merchant_no' => $merchant_no,
                 'merchant_order_no' => $merchant_order_no,
@@ -354,7 +354,7 @@ class OnePay_Debug_Logger {
                 'remark' => $remark,
                 'msg' => $msg,
                 'signature_valid' => $signature_valid,
-                'signature_status' => $signature_valid ? 'PASS' : 'FAIL',
+                'signature_status' => ($signature_valid === true) ? 'PASS' : (($signature_valid === 'pending') ? 'PENDING' : 'FAIL'),
                 'processing_status' => 'PENDING',
                 'received_at' => current_time('mysql')
             ), JSON_UNESCAPED_UNICODE)
@@ -449,6 +449,57 @@ class OnePay_Debug_Logger {
             ),
             array('id' => $callback_id),
             array('%s', '%s', '%s'),
+            array('%d')
+        );
+    }
+    
+    /**
+     * 记录回调处理步骤
+     */
+    public function add_callback_processing_step($callback_id, $step_name, $step_status, $step_data = null, $error_message = null) {
+        if ($this->debug_enabled !== 'yes' || !$callback_id) {
+            return;
+        }
+        
+        global $wpdb;
+        
+        // 获取当前的extra_data
+        $current_data = $wpdb->get_var($wpdb->prepare(
+            "SELECT extra_data FROM {$this->table_name} WHERE id = %d",
+            $callback_id
+        ));
+        
+        $extra_data = $current_data ? json_decode($current_data, true) : array();
+        if (!$extra_data) $extra_data = array();
+        
+        // 初始化processing_steps数组
+        if (!isset($extra_data['processing_steps'])) {
+            $extra_data['processing_steps'] = array();
+        }
+        
+        // 添加新步骤
+        $step_info = array(
+            'step' => $step_name,
+            'status' => $step_status, // success, error, warning, info
+            'timestamp' => current_time('mysql'),
+            'execution_time' => microtime(true),
+            'data' => $step_data,
+            'error' => $error_message
+        );
+        
+        $extra_data['processing_steps'][] = $step_info;
+        $extra_data['last_step'] = $step_name;
+        $extra_data['last_step_status'] = $step_status;
+        $extra_data['steps_count'] = count($extra_data['processing_steps']);
+        
+        // 更新数据库
+        $wpdb->update(
+            $this->table_name,
+            array(
+                'extra_data' => json_encode($extra_data, JSON_UNESCAPED_UNICODE)
+            ),
+            array('id' => $callback_id),
+            array('%s'),
             array('%d')
         );
     }

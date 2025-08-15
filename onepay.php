@@ -94,6 +94,10 @@ class OnePay_Plugin {
         require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-order-manager.php';
         require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-tester.php';
         
+        // 超详细调试相关类
+        require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-detailed-debug-recorder.php';
+        require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-detailed-debug-viewer.php';
+        
         // 新的独立支付网关类
         require_once ONEPAY_PLUGIN_PATH . 'includes/class-wc-gateway-onepay-fps.php';
         require_once ONEPAY_PLUGIN_PATH . 'includes/class-wc-gateway-onepay-russian-card.php';
@@ -191,6 +195,15 @@ class OnePay_Plugin {
             'onepay-callback-logs',
             array($this, 'callback_logs_page')
         );
+        
+        add_submenu_page(
+            'woocommerce',
+            __('OnePay超详细调试', 'onepay'),
+            __('OnePay超详细调试', 'onepay'),
+            'manage_woocommerce',
+            'onepay-detailed-debug',
+            array($this, 'detailed_debug_page')
+        );
     }
     
     /**
@@ -200,6 +213,15 @@ class OnePay_Plugin {
         require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-callback-logs-page.php';
         $logs_page = new OnePay_Callback_Logs_Page();
         $logs_page->display();
+    }
+    
+    /**
+     * 超详细调试页面
+     */
+    public function detailed_debug_page() {
+        require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-detailed-debug-viewer.php';
+        $debug_viewer = new OnePay_Detailed_Debug_Viewer();
+        $debug_viewer->display();
     }
     
     public function activate() {
@@ -263,15 +285,24 @@ class OnePay_Plugin {
         $private_valid = OnePay_Signature::validate_key($private_key, 'private');
         $public_valid = OnePay_Signature::validate_key($public_key, 'public');
         
+        // 注意：商户私钥和平台公钥不是一对，无法进行配对测试
+        // 只能单独验证每个密钥的格式是否正确
         $signature_test = false;
+        $signature_note = '';
+        
         if ($private_valid && $public_valid) {
-            $signature_test = OnePay_Signature::test_signature($private_key, $public_key);
+            // 这里不能用商户私钥和平台公钥进行配对测试，因为它们不是一对
+            $signature_note = '密钥格式正确，但商户私钥和平台公钥不是一对，无法进行配对验证测试';
+            $signature_test = 'N/A';
+        } else {
+            $signature_note = '请确保密钥格式正确';
         }
         
         wp_send_json_success(array(
             'private_valid' => $private_valid,
             'public_valid' => $public_valid,
-            'signature_test' => $signature_test
+            'signature_test' => $signature_test,
+            'note' => $signature_note
         ));
     }
     

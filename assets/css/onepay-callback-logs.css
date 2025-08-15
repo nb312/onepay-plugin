@@ -1,0 +1,524 @@
+/**
+ * OnePay回调日志页面样式
+ */
+
+/* 基础样式 */
+.onepay-callback-logs {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 模态框样式 */
+.onepay-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.onepay-modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    cursor: pointer;
+}
+
+.onepay-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 1000px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.onepay-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e1e5e9;
+    background: #f8f9fa;
+}
+
+.onepay-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.onepay-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.onepay-modal-close:hover {
+    background: #e9ecef;
+    color: #333;
+}
+
+.onepay-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* 阻止页面滚动 */
+body.onepay-modal-open {
+    overflow: hidden;
+}
+
+/* 加载状态 */
+.onepay-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.onepay-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #5469d4;
+    border-radius: 50%;
+    animation: onepay-spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes onepay-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 标签页样式 */
+.onepay-detail-tabs {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.onepay-tab-nav {
+    display: flex;
+    border-bottom: 1px solid #e1e5e9;
+    background: #f8f9fa;
+    padding: 0 25px;
+}
+
+.onepay-tab-btn {
+    background: none;
+    border: none;
+    padding: 15px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.onepay-tab-btn:hover {
+    color: #333;
+    background: rgba(84, 105, 212, 0.1);
+}
+
+.onepay-tab-btn.active {
+    color: #5469d4;
+    border-bottom-color: #5469d4;
+    background: white;
+}
+
+.onepay-tab-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.onepay-tab-pane {
+    display: none;
+    padding: 25px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.onepay-tab-pane.active {
+    display: block;
+}
+
+/* 详情表格 */
+.onepay-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    border: 1px solid #e1e5e9;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.onepay-detail-table th,
+.onepay-detail-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e1e5e9;
+    vertical-align: top;
+}
+
+.onepay-detail-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    width: 200px;
+}
+
+.onepay-detail-table tr:last-child th,
+.onepay-detail-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* JSON代码块 */
+.onepay-json {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: 'Courier New', Monaco, monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    margin: 15px 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* 徽章样式 */
+.onepay-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.onepay-badge-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.onepay-badge-error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.onepay-badge-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.onepay-badge-info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.onepay-badge-default {
+    background: #e9ecef;
+    color: #495057;
+}
+
+/* 空状态 */
+.onepay-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin: 20px 0;
+}
+
+/* 错误状态 */
+.onepay-error {
+    text-align: center;
+    padding: 40px 20px;
+    color: #721c24;
+    background: #f8d7da;
+    border-radius: 6px;
+    margin: 20px 0;
+}
+
+/* 处理步骤时间线 */
+.onepay-steps-timeline {
+    position: relative;
+}
+
+.onepay-step-item {
+    position: relative;
+    display: flex;
+    margin-bottom: 25px;
+    padding-left: 50px;
+}
+
+.onepay-step-item::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 30px;
+    bottom: -25px;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.onepay-step-item:last-child::before {
+    display: none;
+}
+
+.onepay-step-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border: 3px solid #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    z-index: 1;
+}
+
+.onepay-step-success .onepay-step-marker {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.onepay-step-error .onepay-step-marker {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+.onepay-step-warning .onepay-step-marker {
+    background: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.onepay-step-info .onepay-step-marker {
+    background: #d1ecf1;
+    border-color: #17a2b8;
+    color: #0c5460;
+}
+
+.onepay-step-content {
+    flex: 1;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.onepay-step-content h5 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.onepay-step-status {
+    font-size: 11px;
+    font-weight: 500;
+    color: #666;
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.onepay-step-time {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.onepay-step-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin: 10px 0;
+}
+
+.onepay-step-data {
+    margin-top: 15px;
+}
+
+.onepay-toggle-data {
+    background: #5469d4;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.onepay-toggle-data:hover {
+    background: #4256c7;
+}
+
+.onepay-step-data-content {
+    margin-top: 10px;
+}
+
+.onepay-step-data-content .onepay-json {
+    max-height: 200px;
+    font-size: 11px;
+}
+
+/* 查看详情按钮 */
+.view-detail-btn {
+    background: #5469d4;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s;
+}
+
+.view-detail-btn:hover {
+    background: #4256c7;
+    color: white;
+    text-decoration: none;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .onepay-modal-content {
+        width: 95vw;
+        height: 95vh;
+        max-width: none;
+        max-height: none;
+        margin: 0;
+    }
+    
+    .onepay-tab-nav {
+        flex-wrap: wrap;
+        padding: 0 15px;
+    }
+    
+    .onepay-tab-btn {
+        padding: 12px 15px;
+        font-size: 13px;
+    }
+    
+    .onepay-tab-pane {
+        padding: 15px;
+    }
+    
+    .onepay-detail-table th {
+        width: 120px;
+        font-size: 13px;
+    }
+    
+    .onepay-detail-table td {
+        font-size: 13px;
+    }
+    
+    .onepay-step-item {
+        padding-left: 40px;
+    }
+    
+    .onepay-step-marker {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+    
+    .onepay-step-item::before {
+        left: 15px;
+    }
+}
+
+/* 滚动条美化 */
+.onepay-modal-body::-webkit-scrollbar,
+.onepay-tab-pane::-webkit-scrollbar,
+.onepay-json::-webkit-scrollbar {
+    width: 8px;
+}
+
+.onepay-modal-body::-webkit-scrollbar-track,
+.onepay-tab-pane::-webkit-scrollbar-track,
+.onepay-json::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.onepay-modal-body::-webkit-scrollbar-thumb,
+.onepay-tab-pane::-webkit-scrollbar-thumb,
+.onepay-json::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.onepay-modal-body::-webkit-scrollbar-thumb:hover,
+.onepay-tab-pane::-webkit-scrollbar-thumb:hover,
+.onepay-json::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 表格行悬停效果 */
+.onepay-detail-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* 标题样式 */
+.onepay-tab-pane h4 {
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 25px 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.onepay-tab-pane h4:first-child {
+    margin-top: 0;
+}

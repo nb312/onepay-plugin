@@ -13,6 +13,54 @@ class WC_Gateway_OnePay extends WC_Payment_Gateway {
     
     const ID = 'onepay';
     
+    /**
+     * 测试模式标志
+     * @var bool
+     */
+    public $testmode;
+    
+    /**
+     * 调试模式标志
+     * @var bool
+     */
+    public $debug;
+    
+    /**
+     * 商户号
+     * @var string
+     */
+    public $merchant_no;
+    
+    /**
+     * 商户私钥
+     * @var string
+     */
+    public $private_key;
+    
+    /**
+     * 平台公钥
+     * @var string
+     */
+    public $platform_public_key;
+    
+    /**
+     * API接口地址
+     * @var string
+     */
+    public $api_url;
+    
+    /**
+     * 隐藏区块警告标志
+     * @var bool
+     */
+    public $hide_blocks_warning;
+    
+    /**
+     * 日志记录器
+     * @var WC_Logger
+     */
+    public $logger;
+    
     public function __construct() {
         $this->id                 = self::ID;
         $this->icon               = '';
