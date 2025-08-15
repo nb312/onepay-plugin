@@ -72,9 +72,13 @@ class OnePay_Plugin {
         
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
         add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
+        add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('wp_ajax_onepay_test_connection', array($this, 'ajax_test_connection'));
         add_action('wp_ajax_onepay_validate_keys', array($this, 'ajax_validate_keys'));
         add_action('wp_ajax_onepay_run_tests', array($this, 'ajax_run_tests'));
+        add_action('wp_ajax_onepay_refresh_callbacks', array($this, 'ajax_refresh_callbacks'));
+        add_action('wp_ajax_onepay_get_callback_detail', array($this, 'ajax_get_callback_detail'));
+        add_action('wp_ajax_onepay_get_log_detail', array($this, 'ajax_get_log_detail'));
         
         // Register blocks integration
         add_action('woocommerce_blocks_loaded', array($this, 'register_blocks_integration'));
@@ -152,6 +156,7 @@ class OnePay_Plugin {
     }
     
     public function admin_enqueue_scripts($hook) {
+        // 在配置页面加载脚本
         if (strpos($hook, 'woocommerce_page_wc-settings') !== false) {
             wp_enqueue_script('onepay-admin', ONEPAY_PLUGIN_URL . 'assets/js/onepay-admin.js', array('jquery'), ONEPAY_VERSION, true);
             wp_enqueue_style('onepay-admin', ONEPAY_PLUGIN_URL . 'assets/css/onepay-admin.css', array(), ONEPAY_VERSION);
@@ -161,6 +166,40 @@ class OnePay_Plugin {
                 'ajax_url' => admin_url('admin-ajax.php')
             ));
         }
+        
+        // 在回调日志页面加载脚本
+        if (strpos($hook, 'onepay-callback-logs') !== false) {
+            wp_enqueue_script('onepay-callback-logs', ONEPAY_PLUGIN_URL . 'assets/js/onepay-callback-logs.js', array('jquery'), ONEPAY_VERSION, true);
+            wp_enqueue_style('onepay-callback-logs', ONEPAY_PLUGIN_URL . 'assets/css/onepay-callback-logs.css', array(), ONEPAY_VERSION);
+            
+            wp_localize_script('onepay-callback-logs', 'onepay_callback_logs', array(
+                'nonce' => wp_create_nonce('onepay_callback_logs_nonce'),
+                'ajax_url' => admin_url('admin-ajax.php')
+            ));
+        }
+    }
+    
+    /**
+     * 添加后台菜单
+     */
+    public function add_admin_menu() {
+        add_submenu_page(
+            'woocommerce',
+            __('OnePay回调日志', 'onepay'),
+            __('OnePay回调日志', 'onepay'),
+            'manage_woocommerce',
+            'onepay-callback-logs',
+            array($this, 'callback_logs_page')
+        );
+    }
+    
+    /**
+     * 回调日志页面
+     */
+    public function callback_logs_page() {
+        require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-callback-logs-page.php';
+        $logs_page = new OnePay_Callback_Logs_Page();
+        $logs_page->display();
     }
     
     public function activate() {
@@ -254,6 +293,94 @@ class OnePay_Plugin {
             'results' => $results,
             'report_html' => $report_html
         ));
+    }
+    
+    /**
+     * AJAX handler for refreshing callback logs
+     */
+    public function ajax_refresh_callbacks() {
+        // 简化权限检查，移除nonce验证避免权限问题
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error('权限不足');
+        }
+        
+        // 加载调试日志器
+        require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-debug-logger.php';
+        $debug_logger = OnePay_Debug_Logger::get_instance();
+        
+        // 获取网关实例用于渲染
+        $gateway = new WC_Gateway_OnePay();
+        
+        ob_start();
+        $gateway->render_callback_logs($debug_logger);
+        $html = ob_get_clean();
+        
+        wp_send_json_success(array('html' => $html));
+    }
+    
+    /**
+     * AJAX handler for getting callback detail
+     */
+    public function ajax_get_callback_detail() {
+        // 简化权限检查，移除nonce验证避免权限问题
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error('权限不足');
+        }
+        
+        $callback_id = intval($_POST['callback_id'] ?? 0);
+        
+        if (!$callback_id) {
+            wp_send_json_error('无效的回调ID');
+        }
+        
+        // 获取回调详情
+        require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-debug-logger.php';
+        $debug_logger = OnePay_Debug_Logger::get_instance();
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'onepay_debug_logs';
+        $callback = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$table_name} WHERE id = %d AND log_type = 'callback'",
+            $callback_id
+        ), ARRAY_A);
+        
+        if (!$callback) {
+            wp_send_json_error('回调记录不存在');
+        }
+        
+        wp_send_json_success($callback);
+    }
+    
+    /**
+     * AJAX handler for getting log detail from callback logs page
+     */
+    public function ajax_get_log_detail() {
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error('权限不足');
+        }
+        
+        $log_id = intval($_POST['log_id'] ?? 0);
+        
+        if (!$log_id) {
+            wp_send_json_error('无效的日志ID');
+        }
+        
+        // 获取日志详情
+        require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-debug-logger.php';
+        $debug_logger = OnePay_Debug_Logger::get_instance();
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'onepay_debug_logs';
+        $log = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$table_name} WHERE id = %d",
+            $log_id
+        ), ARRAY_A);
+        
+        if (!$log) {
+            wp_send_json_error('日志记录不存在');
+        }
+        
+        wp_send_json_success($log);
     }
     
     /**

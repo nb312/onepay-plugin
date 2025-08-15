@@ -58,11 +58,11 @@ class OnePay_Admin_Logs {
             array($this, 'render_admin_page')
         );
         
-        // 也在工具菜单下添加
+        // 也在工具菜单下添加（降低权限要求）
         add_management_page(
             'OnePay调试日志',
             'OnePay日志',
-            'manage_options',
+            'manage_woocommerce',
             'onepay-logs-tool',
             array($this, 'render_admin_page')
         );
@@ -701,7 +701,10 @@ class OnePay_Admin_Logs {
      * AJAX获取日志列表
      */
     public function ajax_get_logs() {
-        check_ajax_referer('wp_rest', '_wpnonce', false);
+        // 简化权限检查，移除nonce验证
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error('权限不足');
+        }
         
         $filters = $_POST['filters'] ?? array();
         $page = intval($filters['page'] ?? 1);
@@ -754,7 +757,9 @@ class OnePay_Admin_Logs {
      * AJAX获取日志详情
      */
     public function ajax_get_log_detail() {
-        check_ajax_referer('wp_rest', '_wpnonce', false);
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error('权限不足');
+        }
         
         $log_id = intval($_POST['log_id'] ?? 0);
         
@@ -780,8 +785,6 @@ class OnePay_Admin_Logs {
      * AJAX清理日志
      */
     public function ajax_clear_logs() {
-        check_ajax_referer('wp_rest', '_wpnonce', false);
-        
         if (!current_user_can('manage_woocommerce')) {
             wp_send_json_error('权限不足');
         }

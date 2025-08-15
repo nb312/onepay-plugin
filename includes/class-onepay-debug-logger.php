@@ -212,28 +212,353 @@ class OnePay_Debug_Logger {
     }
     
     /**
-     * 记录回调
+     * 记录回调接收
      */
-    public function log_callback($callback_data, $order_id = null) {
+    public function log_callback_received($raw_data, $client_ip, $headers = array()) {
         if ($this->debug_enabled !== 'yes') {
             return;
         }
         
         $log_data = array(
             'log_type' => 'callback',
-            'order_id' => $order_id,
-            'user_ip' => $this->get_client_ip(),
-            'request_data' => json_encode($callback_data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
+            'user_ip' => $client_ip,
+            'request_data' => $raw_data,
             'status' => 'received',
             'extra_data' => json_encode(array(
-                'headers' => getallheaders() ?: $_SERVER,
+                'headers' => $headers,
                 'method' => $_SERVER['REQUEST_METHOD'] ?? '',
-                'timestamp' => current_time('mysql')
+                'content_type' => $_SERVER['CONTENT_TYPE'] ?? '',
+                'timestamp' => current_time('mysql'),
+                'raw_data_length' => strlen($raw_data)
+            ), JSON_UNESCAPED_UNICODE)
+        );
+        
+        $log_id = $this->insert_log($log_data);
+        $this->write_to_wc_log('callback_received', $log_data);
+        
+        return $log_id;
+    }
+    
+    /**
+     * 记录异步回调到本地数据库
+     */
+    public function log_async_callback($callback_data, $signature_valid, $message, $client_ip, $order_id = null) {
+        if ($this->debug_enabled !== 'yes') {
+            return null;
+        }
+        
+        // 解析回调数据
+        $payment_data = null;
+        $merchant_no = '';
+        $onepay_order_no = '';
+        $merchant_order_no = '';
+        $order_status = '';
+        $order_amount = 0;
+        $paid_amount = 0;
+        $order_fee = 0;
+        $currency = '';
+        $pay_model = '';
+        $pay_type = '';
+        $order_time = '';
+        $finish_time = '';
+        $remark = '';
+        
+        // 处理不同格式的回调数据
+        if (is_array($callback_data)) {
+            $merchant_no = $callback_data['merchantNo'] ?? '';
+            
+            if (isset($callback_data['result'])) {
+                $result_data = json_decode($callback_data['result'], true);
+                if ($result_data && isset($result_data['data'])) {
+                    $payment_data = $result_data['data'];
+                }
+            }
+        } elseif (is_string($callback_data)) {
+            // 如果是字符串，尝试解析JSON
+            $parsed_data = json_decode($callback_data, true);
+            if ($parsed_data) {
+                $callback_data = $parsed_data;
+                $merchant_no = $callback_data['merchantNo'] ?? '';
+                
+                if (isset($callback_data['result'])) {
+                    $result_data = json_decode($callback_data['result'], true);
+                    if ($result_data && isset($result_data['data'])) {
+                        $payment_data = $result_data['data'];
+                    }
+                }
+            }
+        }
+        
+        // 从payment_data中提取字段
+        if ($payment_data) {
+            $onepay_order_no = $payment_data['orderNo'] ?? '';
+            $merchant_order_no = $payment_data['merchantOrderNo'] ?? '';
+            $order_status = $payment_data['orderStatus'] ?? '';
+            $currency = $payment_data['currency'] ?? '';
+            $pay_model = $payment_data['payModel'] ?? '';
+            $pay_type = $payment_data['payType'] ?? '';
+            $remark = $payment_data['remark'] ?? '';
+            $msg = $payment_data['msg'] ?? '';
+            
+            // 金额处理（从分转换为元）
+            if (isset($payment_data['orderAmount'])) {
+                $order_amount = floatval($payment_data['orderAmount']) / 100;
+            }
+            if (isset($payment_data['paidAmount'])) {
+                $paid_amount = floatval($payment_data['paidAmount']) / 100;
+            }
+            if (isset($payment_data['orderFee'])) {
+                $order_fee = floatval($payment_data['orderFee']) / 100;
+            }
+            
+            // 时间处理
+            if (isset($payment_data['orderTime']) && $payment_data['orderTime'] > 0) {
+                $order_time = date('Y-m-d H:i:s', $payment_data['orderTime'] / 1000);
+            }
+            if (isset($payment_data['finishTime']) && $payment_data['finishTime'] > 0) {
+                $finish_time = date('Y-m-d H:i:s', $payment_data['finishTime'] / 1000);
+            }
+        }
+        
+        // 构造日志数据
+        $log_data = array(
+            'log_type' => 'async_callback',
+            'order_id' => $order_id,
+            'order_number' => $onepay_order_no,
+            'user_id' => null,
+            'user_name' => null,
+            'user_email' => null,
+            'user_ip' => $client_ip,
+            'amount' => $paid_amount ?: $order_amount,
+            'currency' => $currency,
+            'payment_method' => $pay_model,
+            'request_url' => $_SERVER['REQUEST_URI'] ?? '',
+            'request_data' => is_array($callback_data) ? json_encode($callback_data, JSON_UNESCAPED_UNICODE) : $callback_data,
+            'response_data' => json_encode(array('signature_valid' => $signature_valid, 'message' => $message), JSON_UNESCAPED_UNICODE),
+            'response_code' => $order_status,
+            'error_message' => $signature_valid ? null : $message,
+            'execution_time' => null,
+            'status' => $signature_valid ? 'received' : 'signature_failed',
+            'extra_data' => json_encode(array(
+                'merchant_no' => $merchant_no,
+                'merchant_order_no' => $merchant_order_no,
+                'onepay_order_no' => $onepay_order_no,
+                'order_status' => $order_status,
+                'order_amount' => $order_amount,
+                'paid_amount' => $paid_amount,
+                'order_fee' => $order_fee,
+                'pay_model' => $pay_model,
+                'pay_type' => $pay_type,
+                'order_time' => $order_time,
+                'finish_time' => $finish_time,
+                'remark' => $remark,
+                'msg' => $msg,
+                'signature_valid' => $signature_valid,
+                'signature_status' => $signature_valid ? 'PASS' : 'FAIL',
+                'processing_status' => 'PENDING',
+                'received_at' => current_time('mysql')
+            ), JSON_UNESCAPED_UNICODE)
+        );
+        
+        $log_id = $this->insert_log($log_data);
+        
+        // 同时写入WooCommerce日志
+        $this->write_to_wc_log('async_callback', array(
+            'signature_valid' => $signature_valid,
+            'order_no' => $onepay_order_no,
+            'merchant_order_no' => $merchant_order_no,
+            'order_status' => $order_status,
+            'amount' => $paid_amount ?: $order_amount,
+            'message' => $message
+        ));
+        
+        return $log_id;
+    }
+    
+    /**
+     * 更新回调处理状态
+     */
+    public function update_callback_processing_status($callback_id, $status, $message) {
+        if ($this->debug_enabled !== 'yes' || !$callback_id) {
+            return;
+        }
+        
+        global $wpdb;
+        
+        // 获取当前的extra_data
+        $current_data = $wpdb->get_var($wpdb->prepare(
+            "SELECT extra_data FROM {$this->table_name} WHERE id = %d",
+            $callback_id
+        ));
+        
+        $extra_data = $current_data ? json_decode($current_data, true) : array();
+        if (!$extra_data) $extra_data = array();
+        
+        // 更新处理状态
+        $extra_data['processing_status'] = $status;
+        $extra_data['processing_message'] = $message;
+        $extra_data['processed_at'] = current_time('mysql');
+        
+        // 更新数据库
+        $wpdb->update(
+            $this->table_name,
+            array(
+                'status' => strtolower($status),
+                'error_message' => ($status === 'ERROR') ? $message : null,
+                'extra_data' => json_encode($extra_data, JSON_UNESCAPED_UNICODE)
+            ),
+            array('id' => $callback_id),
+            array('%s', '%s', '%s'),
+            array('%d')
+        );
+    }
+    
+    /**
+     * 更新回调签名验证状态
+     */
+    public function update_callback_signature_status($callback_id, $signature_valid) {
+        if ($this->debug_enabled !== 'yes' || !$callback_id) {
+            return;
+        }
+        
+        global $wpdb;
+        
+        // 获取当前的extra_data
+        $current_data = $wpdb->get_var($wpdb->prepare(
+            "SELECT extra_data FROM {$this->table_name} WHERE id = %d",
+            $callback_id
+        ));
+        
+        $extra_data = $current_data ? json_decode($current_data, true) : array();
+        if (!$extra_data) $extra_data = array();
+        
+        // 更新签名状态
+        $extra_data['signature_valid'] = $signature_valid;
+        $extra_data['signature_status'] = $signature_valid ? 'PASS' : 'FAIL';
+        $extra_data['signature_checked_at'] = current_time('mysql');
+        
+        // 更新数据库状态
+        $new_status = $signature_valid ? 'received' : 'signature_failed';
+        
+        $wpdb->update(
+            $this->table_name,
+            array(
+                'status' => $new_status,
+                'error_message' => $signature_valid ? null : '签名验证失败',
+                'extra_data' => json_encode($extra_data, JSON_UNESCAPED_UNICODE)
+            ),
+            array('id' => $callback_id),
+            array('%s', '%s', '%s'),
+            array('%d')
+        );
+    }
+    
+    /**
+     * 更新回调订单信息
+     */
+    public function update_callback_order_info($callback_id, $order_id) {
+        if ($this->debug_enabled !== 'yes' || !$callback_id) {
+            return;
+        }
+        
+        global $wpdb;
+        
+        // 直接更新order_id字段
+        $wpdb->update(
+            $this->table_name,
+            array('order_id' => $order_id),
+            array('id' => $callback_id),
+            array('%d'),
+            array('%d')
+        );
+    }
+    
+    /**
+     * 记录回调处理结果（保持向后兼容）
+     */
+    public function log_callback_processed($callback_data, $result, $message, $execution_time = null, $order_id = null) {
+        if ($this->debug_enabled !== 'yes') {
+            return;
+        }
+        
+        // 解析订单信息（根据实际回调格式）
+        $order_number = null;
+        $order_status = null;
+        $amount = null;
+        $currency = null;
+        $merchant_order_no = null;
+        $paid_amount = null;
+        $order_fee = null;
+        $payment_data = array(); // 初始化，确保变量可用
+        
+        if ($callback_data && isset($callback_data['result'])) {
+            $result_data = json_decode($callback_data['result'], true);
+            if ($result_data && isset($result_data['data'])) {
+                $payment_data = $result_data['data'];
+                $order_number = $payment_data['orderNo'] ?? null;
+                $merchant_order_no = $payment_data['merchantOrderNo'] ?? null;
+                $order_status = $payment_data['orderStatus'] ?? null;
+                $currency = $payment_data['currency'] ?? null;
+                
+                // 订单金额和实际支付金额（从分转换为元）
+                $amount = isset($payment_data['orderAmount']) ? floatval($payment_data['orderAmount']) / 100 : null;
+                $paid_amount = isset($payment_data['paidAmount']) ? floatval($payment_data['paidAmount']) / 100 : null;
+                $order_fee = isset($payment_data['orderFee']) ? floatval($payment_data['orderFee']) / 100 : null;
+                
+                // 优先使用实际支付金额，没有则使用订单金额
+                if ($paid_amount !== null) {
+                    $amount = $paid_amount;
+                }
+            }
+        }
+        
+        // 构造完整的日志数据，确保所有字段都匹配数据库结构
+        $log_data = array(
+            'log_type' => 'callback',
+            'order_id' => $order_id,
+            'order_number' => $order_number, // OnePay订单号
+            'user_id' => null, // 回调时通常没有用户上下文
+            'user_name' => null,
+            'user_email' => null,
+            'user_ip' => $this->get_client_ip(),
+            'amount' => $amount, // 已转换为元的金额
+            'currency' => $currency,
+            'payment_method' => null, // 回调中没有直接的支付方式信息
+            'request_url' => null, // 这是接收回调的URL，不是请求URL
+            'request_data' => $callback_data ? json_encode($callback_data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : null,
+            'response_data' => json_encode(array('result' => $result, 'message' => $message), JSON_UNESCAPED_UNICODE),
+            'response_code' => $order_status, // 使用订单状态作为响应码
+            'error_message' => $result === 'ERROR' ? $message : null,
+            'execution_time' => $execution_time,
+            'status' => strtolower($result),
+            'extra_data' => json_encode(array(
+                'order_status' => $order_status,
+                'merchant_order_no' => $merchant_order_no,
+                'paid_amount' => $paid_amount,
+                'order_fee' => $order_fee,
+                'original_order_amount' => isset($payment_data['orderAmount']) ? floatval($payment_data['orderAmount']) / 100 : null,
+                'pay_model' => $payment_data['payModel'] ?? null,
+                'order_time' => isset($payment_data['orderTime']) ? date('Y-m-d H:i:s', $payment_data['orderTime'] / 1000) : null,
+                'finish_time' => isset($payment_data['finishTime']) && $payment_data['finishTime'] > 0 ? date('Y-m-d H:i:s', $payment_data['finishTime'] / 1000) : null,
+                'timestamp' => current_time('mysql'),
+                'callback_processed_at' => current_time('mysql', 1), // GMT时间
+                'beijing_time' => date('Y-m-d H:i:s', current_time('timestamp') + 8 * 3600) // 北京时间
             ), JSON_UNESCAPED_UNICODE)
         );
         
         $this->insert_log($log_data);
-        $this->write_to_wc_log('callback', $log_data);
+        $this->write_to_wc_log('callback_processed', $log_data);
+    }
+    
+    /**
+     * 记录回调（兼容旧版本）
+     */
+    public function log_callback($callback_data, $order_id = null) {
+        return $this->log_callback_received(
+            is_array($callback_data) ? json_encode($callback_data) : $callback_data,
+            $this->get_client_ip(),
+            getallheaders() ?: $_SERVER
+        );
     }
     
     /**
@@ -263,10 +588,15 @@ class OnePay_Debug_Logger {
     private function insert_log($data) {
         global $wpdb;
         
+        // 确保明确设置北京时间
+        $beijing_time = date('Y-m-d H:i:s', current_time('timestamp') + 8 * 3600);
+        $data['log_time'] = $beijing_time;
+        
         $wpdb->insert(
             $this->table_name,
             $data,
             array(
+                '%s', // log_time - 显式设置北京时间
                 '%s', // log_type
                 '%d', // order_id
                 '%s', // order_number

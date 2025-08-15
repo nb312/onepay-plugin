@@ -160,6 +160,9 @@ class WC_Gateway_OnePay extends WC_Payment_Gateway {
             
             parent::admin_options();
             
+            // 回调日志已移至独立页面查看，避免配置界面刷新
+            // $this->display_callback_logs_section();
+            $this->display_callback_logs_notice();
             $this->display_admin_tools_section();
             
         } else {
@@ -200,6 +203,614 @@ class WC_Gateway_OnePay extends WC_Payment_Gateway {
                     </td>
                 </tr>
             </table>
+        </div>
+        <?php
+    }
+    
+    /**
+     * 显示回调日志页面提示
+     */
+    public function display_callback_logs_notice() {
+        if (!$this->debug) {
+            return; // 只在调试模式下显示
+        }
+        
+        $callback_logs_url = admin_url('admin.php?page=onepay-callback-logs');
+        ?>
+        <div class="onepay-callback-logs-notice">
+            <h3><?php _e('异步回调记录', 'onepay'); ?></h3>
+            <p class="description">
+                <?php _e('回调记录已移至独立页面查看，避免配置界面频繁刷新。', 'onepay'); ?>
+                <a href="<?php echo esc_url($callback_logs_url); ?>" class="button button-primary" target="_blank">
+                    <?php _e('查看OnePay回调日志', 'onepay'); ?>
+                </a>
+            </p>
+        </div>
+        <?php
+    }
+    
+    /**
+     * 显示回调日志记录区域
+     */
+    public function display_callback_logs_section() {
+        if (!$this->debug) {
+            return; // 只在调试模式下显示
+        }
+        
+        // 加载调试日志器
+        require_once dirname(__FILE__) . '/class-onepay-debug-logger.php';
+        $debug_logger = OnePay_Debug_Logger::get_instance();
+        
+        ?>
+        <div class="onepay-callback-logs-section">
+            <h3><?php _e('异步回调记录', 'onepay'); ?> 
+                <button type="button" id="onepay_refresh_callbacks" class="button button-small">
+                    <?php _e('刷新', 'onepay'); ?>
+                </button>
+            </h3>
+            
+            <div class="onepay-callback-tabs">
+                <button class="tab-button active" onclick="switchCallbackTab('async')"><?php _e('异步回调', 'onepay'); ?></button>
+                <button class="tab-button" onclick="switchCallbackTab('legacy')"><?php _e('历史记录', 'onepay'); ?></button>
+            </div>
+            
+            <div id="onepay_callback_logs_container">
+                <div id="async-callbacks" class="callback-tab-content active">
+                    <?php $this->render_async_callback_logs($debug_logger); ?>
+                </div>
+                <div id="legacy-callbacks" class="callback-tab-content" style="display:none;">
+                    <?php $this->render_legacy_callback_logs($debug_logger); ?>
+                </div>
+            </div>
+            
+            <p class="description">
+                <?php _e('异步回调记录直接从OnePay接口获取，包含验签状态和完整的回调数据。', 'onepay'); ?>
+            </p>
+        </div>
+        
+        <style>
+        .onepay-callback-tabs {
+            margin: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-button.active {
+            border-bottom-color: #0073aa;
+            color: #0073aa;
+            font-weight: bold;
+        }
+        .callback-tab-content {
+            margin-top: 15px;
+        }
+        .signature-status {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .signature-status.pass {
+            background: #28a745;
+            color: white;
+        }
+        .signature-status.fail {
+            background: #dc3545;
+            color: white;
+        }
+        .processing-status {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .processing-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .processing-status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .processing-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .processing-status.pending {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        </style>
+        
+        <script>
+        function switchCallbackTab(tabName) {
+            // 隐藏所有内容
+            document.querySelectorAll('.callback-tab-content').forEach(function(content) {
+                content.style.display = 'none';
+            });
+            
+            // 移除所有按钮的active类
+            document.querySelectorAll('.tab-button').forEach(function(button) {
+                button.classList.remove('active');
+            });
+            
+            // 显示选中的内容
+            document.getElementById(tabName + '-callbacks').style.display = 'block';
+            
+            // 激活选中的按钮
+            event.target.classList.add('active');
+        }
+        </script>
+        <?php
+    }
+    
+    /**
+     * 渲染异步回调日志
+     */
+    public function render_async_callback_logs($debug_logger) {
+        // 获取异步回调记录
+        $async_callbacks = $debug_logger->get_logs(array(
+            'log_type' => 'async_callback',
+            'limit' => 15,
+            'order_by' => 'log_time',
+            'order' => 'DESC'
+        ));
+        
+        if (empty($async_callbacks)) {
+            echo '<div class="onepay-no-callbacks">';
+            echo '<p>' . __('暂无异步回调记录。启用调试模式后，所有异步回调将在此显示。', 'onepay') . '</p>';
+            echo '</div>';
+            return;
+        }
+        
+        echo '<table class="widefat onepay-async-callback-table">';
+        echo '<thead>';
+        echo '<tr>';
+        echo '<th>' . __('时间', 'onepay') . '</th>';
+        echo '<th>' . __('商户订单号', 'onepay') . '</th>';
+        echo '<th>' . __('OnePay订单号', 'onepay') . '</th>';
+        echo '<th>' . __('订单状态', 'onepay') . '</th>';
+        echo '<th>' . __('支付金额', 'onepay') . '</th>';
+        echo '<th>' . __('验签状态', 'onepay') . '</th>';
+        echo '<th>' . __('处理状态', 'onepay') . '</th>';
+        echo '<th>' . __('操作', 'onepay') . '</th>';
+        echo '</tr>';
+        echo '</thead>';
+        echo '<tbody>';
+        
+        foreach ($async_callbacks as $callback) {
+            // 解析extra_data获取详细信息
+            $extra_data = !empty($callback->extra_data) ? json_decode($callback->extra_data, true) : array();
+            
+            $merchant_order_no = $extra_data['merchant_order_no'] ?? '';
+            $onepay_order_no = $extra_data['onepay_order_no'] ?? ($callback->order_number ?: '');
+            $order_status = $extra_data['order_status'] ?? '';
+            $paid_amount = $extra_data['paid_amount'] ?? ($callback->amount ?: 0);
+            $signature_valid = $extra_data['signature_valid'] ?? false;
+            $signature_status = $extra_data['signature_status'] ?? 'UNKNOWN';
+            $processing_status = $extra_data['processing_status'] ?? 'PENDING';
+            
+            // 时间格式化显示
+            $display_time = $callback->log_time ? date('m-d H:i:s', strtotime($callback->log_time)) : '-';
+            
+            echo '<tr class="async-callback-row callback-' . esc_attr($callback->status) . '">';
+            echo '<td>' . esc_html($display_time) . '</td>';
+            echo '<td>' . esc_html($merchant_order_no ?: '-') . '</td>';
+            echo '<td>' . esc_html($onepay_order_no ?: '-') . '</td>';
+            echo '<td>';
+            if ($order_status) {
+                echo '<span class="order-status order-status-' . esc_attr(strtolower($order_status)) . '">' . esc_html($order_status) . '</span>';
+            } else {
+                echo '-';
+            }
+            echo '</td>';
+            echo '<td>' . ($paid_amount ? '¥' . number_format($paid_amount, 2) : '-') . '</td>';
+            echo '<td><span class="signature-status ' . ($signature_valid ? 'pass' : 'fail') . '">' . esc_html($signature_status) . '</span></td>';
+            echo '<td><span class="processing-status ' . esc_attr(strtolower($processing_status)) . '">' . esc_html($processing_status) . '</span></td>';
+            echo '<td><button type="button" class="button button-small view-async-callback-detail" data-id="' . esc_attr($callback->id) . '">' . __('详情', 'onepay') . '</button></td>';
+            echo '</tr>';
+            
+            // 详情行（默认隐藏）
+            echo '<tr id="async-callback-detail-' . esc_attr($callback->id) . '" class="async-callback-detail-row" style="display:none;">';
+            echo '<td colspan="8">';
+            echo '<div class="async-callback-detail-content">';
+            $this->render_async_callback_detail($callback, $extra_data);
+            echo '</div>';
+            echo '</td>';
+            echo '</tr>';
+        }
+        
+        echo '</tbody>';
+        echo '</table>';
+        
+        // 添加JavaScript处理详情显示
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            $('.view-async-callback-detail').on('click', function() {
+                var callbackId = $(this).data('id');
+                var detailRow = $('#async-callback-detail-' + callbackId);
+                
+                if (detailRow.is(':visible')) {
+                    detailRow.hide();
+                    $(this).text('<?php echo __('详情', 'onepay'); ?>');
+                } else {
+                    detailRow.show();
+                    $(this).text('<?php echo __('隐藏', 'onepay'); ?>');
+                }
+            });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * 渲染异步回调详情
+     */
+    public function render_async_callback_detail($callback, $extra_data) {
+        ?>
+        <div class="async-callback-detail">
+            <h4><?php _e('异步回调详细信息', 'onepay'); ?></h4>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                <div>
+                    <h5><?php _e('订单信息', 'onepay'); ?></h5>
+                    <table class="widefat">
+                        <tr><td><strong><?php _e('商户编号', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['merchant_no'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('商户订单号', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['merchant_order_no'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('OnePay订单号', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['onepay_order_no'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('订单状态', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['order_status'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('订单金额', 'onepay'); ?>:</strong></td><td><?php echo ($extra_data['order_amount'] ?? 0) ? '¥' . number_format($extra_data['order_amount'], 2) : '-'; ?></td></tr>
+                        <tr><td><strong><?php _e('实际支付金额', 'onepay'); ?>:</strong></td><td><?php echo ($extra_data['paid_amount'] ?? 0) ? '¥' . number_format($extra_data['paid_amount'], 2) : '-'; ?></td></tr>
+                        <tr><td><strong><?php _e('手续费', 'onepay'); ?>:</strong></td><td><?php echo ($extra_data['order_fee'] ?? 0) ? '¥' . number_format($extra_data['order_fee'], 2) : '-'; ?></td></tr>
+                    </table>
+                </div>
+                
+                <div>
+                    <h5><?php _e('支付信息', 'onepay'); ?></h5>
+                    <table class="widefat">
+                        <tr><td><strong><?php _e('支付类型', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['pay_type'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('支付方式', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['pay_model'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('下单时间', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['order_time'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('完成时间', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['finish_time'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('备注', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['remark'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('客户端IP', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback->user_ip ?: '-'); ?></td></tr>
+                    </table>
+                </div>
+                
+                <div>
+                    <h5><?php _e('处理信息', 'onepay'); ?></h5>
+                    <table class="widefat">
+                        <tr><td><strong><?php _e('验签状态', 'onepay'); ?>:</strong></td><td><span class="signature-status <?php echo ($extra_data['signature_valid'] ?? false) ? 'pass' : 'fail'; ?>"><?php echo esc_html($extra_data['signature_status'] ?? 'UNKNOWN'); ?></span></td></tr>
+                        <tr><td><strong><?php _e('处理状态', 'onepay'); ?>:</strong></td><td><span class="processing-status <?php echo esc_attr(strtolower($extra_data['processing_status'] ?? 'pending')); ?>"><?php echo esc_html($extra_data['processing_status'] ?? 'PENDING'); ?></span></td></tr>
+                        <tr><td><strong><?php _e('处理消息', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['processing_message'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('接收时间', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['received_at'] ?? '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('处理时间', 'onepay'); ?>:</strong></td><td><?php echo esc_html($extra_data['processed_at'] ?? '-'); ?></td></tr>
+                        <?php if ($callback->order_id): ?>
+                        <tr><td><strong><?php _e('关联订单', 'onepay'); ?>:</strong></td><td><a href="<?php echo admin_url('post.php?post=' . $callback->order_id . '&action=edit'); ?>" target="_blank">#<?php echo $callback->order_id; ?></a></td></tr>
+                        <?php endif; ?>
+                    </table>
+                </div>
+            </div>
+            
+            <?php if (!empty($callback->request_data)): ?>
+            <h5><?php _e('原始回调数据', 'onepay'); ?></h5>
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
+<?php echo esc_html(json_encode(json_decode($callback->request_data, true), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+    
+    /**
+     * 渲染历史回调日志（向后兼容）
+     */
+    public function render_legacy_callback_logs($debug_logger) {
+        // 获取历史回调记录
+        $legacy_callbacks = $debug_logger->get_logs(array(
+            'log_type' => 'callback',
+            'limit' => 10,
+            'order_by' => 'log_time',
+            'order' => 'DESC'
+        ));
+        
+        if (empty($legacy_callbacks)) {
+            echo '<div class="onepay-no-callbacks">';
+            echo '<p>' . __('暂无历史回调记录。', 'onepay') . '</p>';
+            echo '</div>';
+            return;
+        }
+        
+        // 使用原有的回调日志渲染逻辑
+        $this->render_callback_logs_table($legacy_callbacks);
+    }
+    
+    /**
+     * 渲染回调日志表格（重构后的通用方法）
+     */
+    public function render_callback_logs_table($callbacks) {
+        echo '<table class="widefat onepay-callback-table">';
+        echo '<thead>';
+        echo '<tr>';
+        echo '<th>' . __('时间', 'onepay') . '</th>';
+        echo '<th>' . __('商户订单号', 'onepay') . '</th>';
+        echo '<th>' . __('OnePay订单号', 'onepay') . '</th>';
+        echo '<th>' . __('订单状态', 'onepay') . '</th>';
+        echo '<th>' . __('支付金额', 'onepay') . '</th>';
+        echo '<th>' . __('手续费', 'onepay') . '</th>';
+        echo '<th>' . __('支付方式', 'onepay') . '</th>';
+        echo '<th>' . __('处理结果', 'onepay') . '</th>';
+        echo '<th>' . __('操作', 'onepay') . '</th>';
+        echo '</tr>';
+        echo '</thead>';
+        echo '<tbody>';
+        
+        foreach ($callbacks as $callback) {
+            // 解析回调数据获取完整信息
+            $callback_data = $this->parse_callback_data($callback);
+            
+            // 时间格式化显示
+            $display_time = $callback->log_time ? date('m-d H:i:s', strtotime($callback->log_time)) : '-';
+            
+            echo '<tr class="callback-row callback-' . esc_attr($callback->status) . '">';
+            echo '<td>' . esc_html($display_time) . '</td>';
+            echo '<td>' . esc_html($callback_data['merchant_order_no'] ?: '-') . '</td>';
+            echo '<td>' . esc_html($callback_data['onepay_order_no'] ?: '-') . '</td>';
+            echo '<td>';
+            if ($callback_data['order_status']) {
+                echo '<span class="order-status order-status-' . esc_attr(strtolower($callback_data['order_status'])) . '">' . esc_html($callback_data['order_status']) . '</span>';
+            } else {
+                echo '-';
+            }
+            echo '</td>';
+            echo '<td>';
+            if ($callback_data['paid_amount']) {
+                echo '¥' . number_format($callback_data['paid_amount'], 2);
+                if ($callback_data['order_amount'] && $callback_data['paid_amount'] != $callback_data['order_amount']) {
+                    echo '<br><small>订单: ¥' . number_format($callback_data['order_amount'], 2) . '</small>';
+                }
+            } else {
+                echo '-';
+            }
+            echo '</td>';
+            echo '<td>' . ($callback_data['order_fee'] ? '¥' . number_format($callback_data['order_fee'], 2) : '-') . '</td>';
+            echo '<td>' . esc_html($callback_data['pay_model'] ?: '-') . '</td>';
+            echo '<td><span class="callback-result callback-result-' . esc_attr(strtolower($callback->status)) . '">' . esc_html($callback_data['callback_result']) . '</span></td>';
+            echo '<td><button type="button" class="button button-small view-callback-detail" data-id="' . esc_attr($callback->id) . '">' . __('详情', 'onepay') . '</button></td>';
+            echo '</tr>';
+            
+            // 详情行（默认隐藏）
+            echo '<tr id="callback-detail-' . esc_attr($callback->id) . '" class="callback-detail-row" style="display:none;">';
+            echo '<td colspan="9">';
+            echo '<div class="callback-detail-content">';
+            $this->render_callback_detail($callback, $callback_data);
+            echo '</div>';
+            echo '</td>';
+            echo '</tr>';
+        }
+        
+        echo '</tbody>';
+        echo '</table>';
+        
+        // 添加JavaScript处理详情显示
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            $('.view-callback-detail').on('click', function() {
+                var callbackId = $(this).data('id');
+                var detailRow = $('#callback-detail-' + callbackId);
+                
+                if (detailRow.is(':visible')) {
+                    detailRow.hide();
+                    $(this).text('<?php echo __('详情', 'onepay'); ?>');
+                } else {
+                    detailRow.show();
+                    $(this).text('<?php echo __('隐藏', 'onepay'); ?>');
+                }
+            });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * 渲染回调日志（向后兼容）
+     */
+    public function render_callback_logs($debug_logger) {
+        // 直接调用历史记录渲染
+        $this->render_legacy_callback_logs($debug_logger);
+    }
+    
+    /**
+     * 解析回调数据 - 兼容多种数据格式
+     */
+    private function parse_callback_data($callback) {
+        $result = array(
+            'merchant_order_no' => '',
+            'onepay_order_no' => '',
+            'order_status' => '',
+            'order_amount' => 0,
+            'paid_amount' => 0,
+            'order_fee' => 0,
+            'currency' => '',
+            'pay_type' => '',
+            'pay_model' => '',
+            'order_time' => '',
+            'finish_time' => '',
+            'msg' => '',
+            'callback_result' => 'unknown'
+        );
+        
+        // 优先从request_data解析（最原始的数据）
+        if (!empty($callback->request_data)) {
+            $request_data = json_decode($callback->request_data, true);
+            
+            // 检查多种可能的数据格式
+            $payment_data = null;
+            
+            // 格式1: 标准OnePay回调格式 {merchantNo, result, sign}
+            if ($request_data && isset($request_data['result'])) {
+                $callback_result = json_decode($request_data['result'], true);
+                if ($callback_result && isset($callback_result['data'])) {
+                    $payment_data = $callback_result['data'];
+                }
+            }
+            // 格式2: 直接的data格式（可能的变体）
+            elseif ($request_data && isset($request_data['data'])) {
+                $payment_data = $request_data['data'];
+            }
+            // 格式3: 直接包含字段的格式
+            elseif ($request_data && isset($request_data['orderNo'])) {
+                $payment_data = $request_data;
+            }
+            
+            // 解析支付数据
+            if ($payment_data) {
+                $result['merchant_order_no'] = $payment_data['merchantOrderNo'] ?? '';
+                $result['onepay_order_no'] = $payment_data['orderNo'] ?? '';
+                $result['order_status'] = $payment_data['orderStatus'] ?? '';
+                $result['currency'] = $payment_data['currency'] ?? '';
+                $result['pay_type'] = $payment_data['payType'] ?? '';
+                $result['pay_model'] = $payment_data['payModel'] ?? '';
+                $result['msg'] = $payment_data['msg'] ?? '';
+                
+                // 金额处理 - 检查是否需要从分转换为元
+                if (isset($payment_data['orderAmount'])) {
+                    $order_amount = floatval($payment_data['orderAmount']);
+                    // 如果金额大于10000，认为是以分为单位，需要转换
+                    $result['order_amount'] = ($order_amount > 10000) ? $order_amount / 100 : $order_amount;
+                }
+                
+                if (isset($payment_data['paidAmount'])) {
+                    $paid_amount = floatval($payment_data['paidAmount']);
+                    $result['paid_amount'] = ($paid_amount > 10000) ? $paid_amount / 100 : $paid_amount;
+                }
+                
+                if (isset($payment_data['orderFee'])) {
+                    $order_fee = floatval($payment_data['orderFee']);
+                    $result['order_fee'] = ($order_fee > 1000) ? $order_fee / 100 : $order_fee;
+                }
+                
+                // 时间格式化 - 处理毫秒时间戳
+                if (isset($payment_data['orderTime']) && $payment_data['orderTime'] > 0) {
+                    $order_time = $payment_data['orderTime'];
+                    // 如果是毫秒时间戳（13位数字）
+                    if ($order_time > 1000000000000) {
+                        $result['order_time'] = date('Y-m-d H:i:s', $order_time / 1000);
+                    } else {
+                        $result['order_time'] = date('Y-m-d H:i:s', $order_time);
+                    }
+                }
+                
+                if (isset($payment_data['finishTime']) && $payment_data['finishTime'] > 0) {
+                    $finish_time = $payment_data['finishTime'];
+                    if ($finish_time > 1000000000000) {
+                        $result['finish_time'] = date('Y-m-d H:i:s', $finish_time / 1000);
+                    } else {
+                        $result['finish_time'] = date('Y-m-d H:i:s', $finish_time);
+                    }
+                }
+            }
+        }
+        
+        // 从extra_data补充（优先级较低，只在主数据缺失时使用）
+        if (!empty($callback->extra_data)) {
+            $extra_data = json_decode($callback->extra_data, true);
+            if ($extra_data) {
+                $result['order_status'] = $result['order_status'] ?: ($extra_data['order_status'] ?? '');
+                $result['merchant_order_no'] = $result['merchant_order_no'] ?: ($extra_data['merchant_order_no'] ?? '');
+                $result['pay_model'] = $result['pay_model'] ?: ($extra_data['pay_model'] ?? '');
+                
+                // 只在主数据没有金额时才使用extra_data的金额
+                if (!$result['paid_amount'] && isset($extra_data['paid_amount'])) {
+                    $result['paid_amount'] = floatval($extra_data['paid_amount']);
+                }
+                if (!$result['order_fee'] && isset($extra_data['order_fee'])) {
+                    $result['order_fee'] = floatval($extra_data['order_fee']);
+                }
+                if (!$result['order_amount'] && isset($extra_data['original_order_amount'])) {
+                    $result['order_amount'] = floatval($extra_data['original_order_amount']);
+                }
+                
+                // 时间信息补充
+                $result['order_time'] = $result['order_time'] ?: ($extra_data['order_time'] ?? '');
+                $result['finish_time'] = $result['finish_time'] ?: ($extra_data['finish_time'] ?? '');
+            }
+        }
+        
+        // 从数据库基础字段补充
+        $result['onepay_order_no'] = $result['onepay_order_no'] ?: ($callback->order_number ?: '');
+        $result['currency'] = $result['currency'] ?: ($callback->currency ?: '');
+        
+        // 金额补充：优先使用解析的金额，其次使用数据库amount字段
+        if (!$result['paid_amount'] && !empty($callback->amount)) {
+            $result['paid_amount'] = floatval($callback->amount);
+        }
+        
+        // 确定处理结果
+        if ($callback->status === 'success') {
+            $result['callback_result'] = 'SUCCESS';
+        } elseif ($callback->status === 'error') {
+            $result['callback_result'] = 'ERROR';
+        } elseif ($callback->status === 'received') {
+            $result['callback_result'] = '已接收';
+        } elseif (!empty($callback->response_code)) {
+            $result['callback_result'] = $callback->response_code;
+        } elseif (!empty($result['order_status'])) {
+            $result['callback_result'] = $result['order_status'];
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 渲染回调详情
+     */
+    private function render_callback_detail($callback, $callback_data) {
+        ?>
+        <div class="callback-detail">
+            <h4><?php _e('回调详细信息', 'onepay'); ?></h4>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h5><?php _e('订单信息', 'onepay'); ?></h5>
+                    <table class="widefat">
+                        <tr><td><strong><?php _e('商户订单号', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback_data['merchant_order_no'] ?: '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('OnePay订单号', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback_data['onepay_order_no'] ?: '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('订单状态', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback_data['order_status'] ?: '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('订单金额', 'onepay'); ?>:</strong></td><td><?php echo $callback_data['order_amount'] ? '¥' . number_format($callback_data['order_amount'], 2) : '-'; ?></td></tr>
+                        <tr><td><strong><?php _e('实际支付金额', 'onepay'); ?>:</strong></td><td><?php echo $callback_data['paid_amount'] ? '¥' . number_format($callback_data['paid_amount'], 2) : '-'; ?></td></tr>
+                        <tr><td><strong><?php _e('手续费', 'onepay'); ?>:</strong></td><td><?php echo $callback_data['order_fee'] ? '¥' . number_format($callback_data['order_fee'], 2) : '-'; ?></td></tr>
+                        <tr><td><strong><?php _e('币种', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback_data['currency'] ?: '-'); ?></td></tr>
+                    </table>
+                </div>
+                
+                <div>
+                    <h5><?php _e('支付信息', 'onepay'); ?></h5>
+                    <table class="widefat">
+                        <tr><td><strong><?php _e('支付类型', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback_data['pay_type'] ?: '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('支付方式', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback_data['pay_model'] ?: '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('下单时间', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback_data['order_time'] ?: '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('完成时间', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback_data['finish_time'] ?: '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('客户端IP', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback->user_ip ?: '-'); ?></td></tr>
+                        <tr><td><strong><?php _e('执行时间', 'onepay'); ?>:</strong></td><td><?php echo $callback->execution_time ? number_format($callback->execution_time * 1000, 1) . 'ms' : '-'; ?></td></tr>
+                        <?php if ($callback_data['msg']): ?>
+                        <tr><td><strong><?php _e('失败原因', 'onepay'); ?>:</strong></td><td><?php echo esc_html($callback_data['msg']); ?></td></tr>
+                        <?php endif; ?>
+                    </table>
+                </div>
+            </div>
+            
+            <?php if (!empty($callback->request_data)): ?>
+            <h5><?php _e('原始回调数据', 'onepay'); ?></h5>
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 3px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">
+<?php echo esc_html(json_encode(json_decode($callback->request_data, true), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)); ?>
+            </div>
+            <?php endif; ?>
         </div>
         <?php
     }
