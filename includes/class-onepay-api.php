@@ -661,4 +661,191 @@ class OnePay_API {
         }
     }
     
+    /**
+     * 创建信用卡支付请求
+     * 
+     * @param WC_Order $order 订单对象
+     * @param array $card_data 卡片数据
+     * @return array 响应数组
+     */
+    public function create_card_payment_request($order, $card_data) {
+        try {
+            // 记录请求开始
+            $this->logger->info('开始创建信用卡支付请求', array(
+                'order_id' => $order->get_id(),
+                'card_type' => $card_data['card_type'],
+                'order_total' => $order->get_total(),
+                'currency' => get_woocommerce_currency()
+            ));
+            
+            $request_data = $this->build_card_payment_request($order, $card_data);
+            $response = $this->send_request($request_data);
+            
+            // 详细记录响应
+            $this->logger->info('信用卡支付API原始响应', array(
+                'response_type' => gettype($response),
+                'response_empty' => empty($response),
+                'has_result' => isset($response['result']),
+                'response_keys' => $response ? array_keys($response) : null,
+                'response_data' => $response
+            ));
+            
+            // 检查响应是否为空
+            if (empty($response)) {
+                $this->logger->error('信用卡支付API响应为空');
+                return array(
+                    'success' => false,
+                    'message' => __('API服务器无响应，请检查网络连接', 'onepay'),
+                    'debug_info' => 'Empty response from API'
+                );
+            }
+            
+            // 检查是否有result字段
+            if (!isset($response['result'])) {
+                $this->logger->error('信用卡支付API响应缺少result字段', array(
+                    'response' => $response
+                ));
+                return array(
+                    'success' => false,
+                    'message' => __('API响应格式错误，缺少必要字段', 'onepay'),
+                    'debug_info' => 'Missing result field in response',
+                    'raw_response' => json_encode($response)
+                );
+            }
+            
+            // 尝试解析result
+            $result_data = json_decode($response['result'], true);
+            
+            if ($result_data === null && json_last_error() !== JSON_ERROR_NONE) {
+                $this->logger->error('无法解析信用卡支付result字段', array(
+                    'json_error' => json_last_error_msg(),
+                    'result_field' => substr($response['result'], 0, 500)
+                ));
+                return array(
+                    'success' => false,
+                    'message' => __('API响应解析失败', 'onepay'),
+                    'debug_info' => 'JSON parse error: ' . json_last_error_msg()
+                );
+            }
+            
+            // 检查响应代码
+            if ($result_data && isset($result_data['code'])) {
+                if ($result_data['code'] === '0000') {
+                    // 成功响应
+                    if (!isset($result_data['data'])) {
+                        $this->logger->error('成功响应中缺少data字段');
+                        return array(
+                            'success' => false,
+                            'message' => __('支付请求创建失败：响应数据不完整', 'onepay')
+                        );
+                    }
+                    
+                    $this->logger->info('信用卡支付请求创建成功', array(
+                        'order_no' => isset($result_data['data']['orderNo']) ? $result_data['data']['orderNo'] : 'N/A',
+                        'web_url' => isset($result_data['data']['webUrl']) ? 'URL provided' : 'No URL'
+                    ));
+                    
+                    return array(
+                        'success' => true,
+                        'message' => $result_data['message'] ?? __('支付请求创建成功', 'onepay'),
+                        'data' => $result_data['data']
+                    );
+                } else {
+                    // 错误响应
+                    $error_message = $result_data['message'] ?? __('API返回错误代码: ', 'onepay') . $result_data['code'];
+                    
+                    $this->logger->error('信用卡支付API返回错误', array(
+                        'error_code' => $result_data['code'],
+                        'error_message' => $error_message
+                    ));
+                    
+                    return array(
+                        'success' => false,
+                        'message' => $error_message,
+                        'error_code' => $result_data['code']
+                    );
+                }
+            } else {
+                $this->logger->error('信用卡支付API响应格式异常', array(
+                    'result_data' => $result_data
+                ));
+                return array(
+                    'success' => false,
+                    'message' => __('API响应格式异常', 'onepay')
+                );
+            }
+            
+        } catch (Exception $e) {
+            $this->logger->error('信用卡支付请求异常', array(
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ));
+            
+            return array(
+                'success' => false,
+                'message' => __('支付请求创建失败: ', 'onepay') . $e->getMessage()
+            );
+        }
+    }
+    
+    /**
+     * 构建信用卡支付请求数据
+     * 
+     * @param WC_Order $order 订单对象
+     * @param array $card_data 卡片数据
+     * @return array 请求数据
+     */
+    private function build_card_payment_request($order, $card_data) {
+        $merchant_order_no = $order->get_order_number() . '_' . time();
+        $order_amount = intval($order->get_total() * 100); // 转换为最小货币单位
+        
+        $callback_url = add_query_arg('wc-api', 'onepay_callback', home_url('/'));
+        $notice_url = add_query_arg(
+            array(
+                'wc-api' => 'onepay_return',
+                'order_id' => $order->get_id()
+            ),
+            home_url('/')
+        );
+        
+        // 处理信用卡有效期格式 (MM/YY -> MMYY)
+        $expiry = str_replace('/', '', $card_data['card_expiry']);
+        
+        $content_data = array(
+            'timeStamp' => strval(time() * 1000),
+            'orderAmount' => strval($order_amount),
+            'payType' => 'RUSSIA_PAY',
+            'productDetail' => urlencode($this->get_order_description($order)),
+            'callbackUrl' => $callback_url,
+            'payModel' => 'CARDPAYMENT',
+            'noticeUrl' => $notice_url,
+            'merchantOrderNo' => $merchant_order_no,
+            'merchantNo' => $this->gateway->merchant_no,
+            'userIp' => $this->get_user_ip(),
+            'userId' => strval($order->get_customer_id()),
+            'customParam' => urlencode('order_' . $order->get_id()),
+            // 信用卡特定参数
+            'cardNo' => str_replace(' ', '', $card_data['card_number']),
+            'cvv' => $card_data['card_cvc'],
+            'expiryDate' => $expiry,
+            'cardType' => strtoupper($card_data['card_type'])
+        );
+        
+        $content_json = json_encode($content_data, JSON_UNESCAPED_SLASHES);
+        
+        $signature = OnePay_Signature::sign($content_json, $this->gateway->private_key);
+        
+        if (!$signature) {
+            throw new Exception('Failed to generate signature for card payment');
+        }
+        
+        return array(
+            'merchantNo' => $this->gateway->merchant_no,
+            'version' => '2.0',
+            'content' => $content_json,
+            'sign' => $signature
+        );
+    }
+    
 }

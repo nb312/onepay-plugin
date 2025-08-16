@@ -14,7 +14,7 @@ class WC_Gateway_OnePay_FPS extends WC_Payment_Gateway {
     
     public function __construct() {
         $this->id                 = 'onepay_fps';
-        $this->icon               = ONEPAY_PLUGIN_URL . 'assets/images/fps-logo.svg';
+        $this->icon               = ONEPAY_PLUGIN_URL . 'assets/images/fps-colored.svg';
         $this->has_fields         = false;
         $this->method_title       = __('OnePay FPS', 'onepay');
         $this->method_description = __('俄罗斯快速支付系统', 'onepay');

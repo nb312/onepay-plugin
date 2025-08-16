@@ -101,7 +101,8 @@ class OnePay_Plugin {
         // 新的独立支付网关类
         require_once ONEPAY_PLUGIN_PATH . 'includes/class-wc-gateway-onepay-fps.php';
         require_once ONEPAY_PLUGIN_PATH . 'includes/class-wc-gateway-onepay-russian-card.php';
-        require_once ONEPAY_PLUGIN_PATH . 'includes/class-wc-gateway-onepay-cards.php';
+        require_once ONEPAY_PLUGIN_PATH . 'includes/class-wc-gateway-onepay-visa.php';
+        require_once ONEPAY_PLUGIN_PATH . 'includes/class-wc-gateway-onepay-mastercard.php';
         require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-international-card.php';
         
         require_once ONEPAY_PLUGIN_PATH . 'debug-info.php';
@@ -136,7 +137,8 @@ class OnePay_Plugin {
         // 添加独立的支付方式网关
         $gateways[] = 'WC_Gateway_OnePay_FPS';
         $gateways[] = 'WC_Gateway_OnePay_Russian_Card';
-        $gateways[] = 'WC_Gateway_OnePay_Cards';
+        $gateways[] = 'WC_Gateway_OnePay_Visa';
+        $gateways[] = 'WC_Gateway_OnePay_Mastercard';
         
         // Debug: log gateway registration
         if (defined('WP_DEBUG') && WP_DEBUG) {
@@ -157,6 +159,40 @@ class OnePay_Plugin {
     public function enqueue_scripts() {
         wp_enqueue_script('onepay-frontend', ONEPAY_PLUGIN_URL . 'assets/js/onepay-frontend.js', array('jquery'), ONEPAY_VERSION, true);
         wp_enqueue_style('onepay-frontend', ONEPAY_PLUGIN_URL . 'assets/css/onepay-frontend.css', array(), ONEPAY_VERSION);
+        
+        // 在结账页面加载支付选项增强样式和脚本
+        if (is_checkout() || is_wc_endpoint_url('order-pay')) {
+            // 加载结账页面支付选项自定义样式
+            wp_enqueue_style(
+                'onepay-checkout-payment-styles', 
+                ONEPAY_PLUGIN_URL . 'assets/css/onepay-checkout-payment-styles.css', 
+                array(), 
+                ONEPAY_VERSION, 
+                'all'
+            );
+            
+            // 注入高优先级内联样式确保覆盖
+            add_action('wp_head', array($this, 'inject_critical_checkout_styles'), 999);
+            
+            // 加载结账页面支付选项增强脚本
+            wp_enqueue_script(
+                'onepay-checkout-payment-enhancement', 
+                ONEPAY_PLUGIN_URL . 'assets/js/onepay-checkout-payment-enhancement.js', 
+                array('jquery'), 
+                ONEPAY_VERSION, 
+                true
+            );
+            
+            // 向JavaScript传递必要的数据
+            wp_localize_script('onepay-checkout-payment-enhancement', 'onePayCheckoutData', array(
+                'pluginUrl' => ONEPAY_PLUGIN_URL,
+                'version' => ONEPAY_VERSION,
+                'nonce' => wp_create_nonce('onepay_checkout_nonce'),
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'isCheckout' => is_checkout(),
+                'isOrderPay' => is_wc_endpoint_url('order-pay')
+            ));
+        }
     }
     
     public function admin_enqueue_scripts($hook) {
@@ -181,6 +217,151 @@ class OnePay_Plugin {
                 'ajax_url' => admin_url('admin-ajax.php')
             ));
         }
+    }
+    
+    /**
+     * 注入关键的内联CSS样式确保最高优先级
+     */
+    public function inject_critical_checkout_styles() {
+        if (!is_checkout() && !is_wc_endpoint_url('order-pay')) {
+            return;
+        }
+        
+        echo '<style id="onepay-critical-checkout-styles" type="text/css">
+/* OnePay 关键结账样式 - 最高优先级 */
+html body.woocommerce-checkout .wc_payment_methods.payment_methods.methods,
+html body.woocommerce-page .wc_payment_methods.payment_methods.methods,
+html body .woocommerce .wc_payment_methods.payment_methods.methods {
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    border: none !important;
+    background: none !important;
+}
+
+html body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li,
+html body.woocommerce-page .wc_payment_methods.payment_methods.methods li,
+html body .woocommerce .wc_payment_methods.payment_methods.methods li {
+    position: relative !important;
+    margin: 0 0 10px 0 !important;
+    padding: 15px !important;
+    border: 2px solid #e0e0e0 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    list-style: none !important;
+    cursor: pointer !important;
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    transition: all 0.3s ease !important;
+}
+
+html body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li.selected,
+html body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:has(input:checked),
+html body.woocommerce-page .wc_payment_methods.payment_methods.methods li.selected,
+html body.woocommerce-page .wc_payment_methods.payment_methods.methods li:has(input:checked) {
+    border-color: #4CAF50 !important;
+    background-color: #f8fff8 !important;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2) !important;
+}
+
+html body .wc_payment_methods.payment_methods.methods li input[type="radio"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    pointer-events: none !important;
+}
+
+html body .wc_payment_methods.payment_methods.methods li label {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    font-weight: normal !important;
+    line-height: 1.4 !important;
+    color: #333 !important;
+    border: none !important;
+    background: none !important;
+}
+
+html body .wc_payment_methods.payment_methods.methods li label::after {
+    content: "" !important;
+    width: 24px !important;
+    height: 24px !important;
+    border: 2px solid #ccc !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    display: inline-block !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+    transition: all 0.3s ease !important;
+    margin-left: 15px !important;
+}
+
+html body .wc_payment_methods.payment_methods.methods li:has(input:checked) label::after,
+html body .wc_payment_methods.payment_methods.methods li.selected label::after {
+    border-color: #4CAF50 !important;
+    background: #4CAF50 !important;
+    box-shadow: inset 0 0 0 4px #fff !important;
+}
+
+html body .wc_payment_methods.payment_methods.methods li label img {
+    width: 32px !important;
+    height: 32px !important;
+    margin-right: 12px !important;
+    margin-left: 0 !important;
+    border-radius: 50% !important;
+    object-fit: contain !important;
+    background: #f5f5f5 !important;
+    padding: 4px !important;
+    box-sizing: border-box !important;
+    vertical-align: middle !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+}
+
+/* 统一大卡片外层样式 */
+html body.woocommerce-checkout .wc_payment_methods.payment_methods.methods,
+html body.woocommerce-page .wc_payment_methods.payment_methods.methods {
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 支付选项内部无边框，仅横线分隔 */
+html body .wc_payment_methods.payment_methods.methods li {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    padding: 16px 20px !important;
+}
+
+/* 信用卡表单样式 */
+html body .wc_payment_methods.payment_methods.methods li .wc-credit-card-form {
+    margin-top: 15px !important;
+    padding: 15px !important;
+    background: #f9f9f9 !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 4px !important;
+}
+
+html body .wc_payment_methods.payment_methods.methods li .wc-credit-card-form input[type="text"] {
+    width: 100% !important;
+    padding: 10px 12px !important;
+    border: 2px solid #ddd !important;
+    border-radius: 4px !important;
+    font-size: 16px !important;
+}
+</style>';
     }
     
     /**
@@ -242,7 +423,27 @@ class OnePay_Plugin {
             wp_die($error_message);
         }
         
+        // 强制设置正确的网关标题
+        $this->force_update_gateway_titles();
+        
         flush_rewrite_rules();
+    }
+    
+    /**
+     * 强制更新网关标题设置
+     */
+    private function force_update_gateway_titles() {
+        // 更新Visa网关标题
+        update_option('woocommerce_onepay_visa_settings', array(
+            'enabled' => 'yes',
+            'title' => 'VISA'
+        ));
+        
+        // 更新Mastercard网关标题  
+        update_option('woocommerce_onepay_mastercard_settings', array(
+            'enabled' => 'yes',
+            'title' => 'Mastercard'
+        ));
     }
     
     public function deactivate() {

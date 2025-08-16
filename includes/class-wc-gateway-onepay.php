@@ -1408,6 +1408,59 @@ class WC_Gateway_OnePay extends WC_Payment_Gateway {
         }
     }
     
+    /**
+     * 处理带卡片数据的支付（用于Visa/Mastercard）
+     * 
+     * @param int $order_id 订单ID
+     * @param array $card_data 卡片数据
+     * @return array 支付结果
+     */
+    public function process_payment_with_card_data($order_id, $card_data) {
+        $order = wc_get_order($order_id);
+        
+        if (!$order) {
+            return array(
+                'result'   => 'fail',
+                'messages' => __('订单未找到', 'onepay')
+            );
+        }
+        
+        // 保存支付方法和卡片类型
+        $order->update_meta_data('_onepay_payment_method', 'CARDPAYMENT');
+        $order->update_meta_data('_onepay_card_type', $card_data['card_type']);
+        $order->save();
+        
+        // 处理信用卡支付
+        $api_handler = new OnePay_API();
+        $response = $api_handler->create_card_payment_request($order, $card_data);
+        
+        if ($response['success']) {
+            $order->update_status('pending', __('等待OnePay支付确认', 'onepay'));
+            $order->update_meta_data('_onepay_order_no', $response['data']['orderNo']);
+            $order->save();
+            
+            return array(
+                'result'   => 'success',
+                'redirect' => $response['data']['webUrl']
+            );
+        } else {
+            wc_add_notice($response['message'], 'error');
+            return array(
+                'result' => 'fail'
+            );
+        }
+    }
+    
+    /**
+     * 检查网关是否正确配置
+     */
+    public function is_properly_configured() {
+        return !empty($this->merchant_no) && 
+               !empty($this->private_key) && 
+               !empty($this->platform_public_key) && 
+               !empty($this->api_url);
+    }
+
     public function process_callback() {
         $callback_handler = new OnePay_Callback();
         $callback_handler->process_callback();

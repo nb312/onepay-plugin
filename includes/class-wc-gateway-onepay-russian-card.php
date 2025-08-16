@@ -14,7 +14,7 @@ class WC_Gateway_OnePay_Russian_Card extends WC_Payment_Gateway {
     
     public function __construct() {
         $this->id                 = 'onepay_russian_card';
-        $this->icon               = ONEPAY_PLUGIN_URL . 'assets/images/russian-card.svg';
+        $this->icon               = ONEPAY_PLUGIN_URL . 'assets/images/russian-card-colored.svg';
         $this->has_fields         = false;
         $this->method_title       = __('OnePay 俄罗斯卡', 'onepay');
         $this->method_description = __('俄罗斯银行卡支付', 'onepay');
