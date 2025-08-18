@@ -479,16 +479,32 @@ class OnePay_Detailed_Debug_Recorder {
     public function get_recent_sessions($limit = 20) {
         global $wpdb;
         
-        return $wpdb->get_results($wpdb->prepare(
+        $sessions = $wpdb->get_results($wpdb->prepare(
             "SELECT session_id, request_id, MIN(created_at) as start_time, MAX(created_at) as end_time, 
                     COUNT(*) as record_count, 
-                    SUM(CASE WHEN record_type = 'error' THEN 1 ELSE 0 END) as error_count
-             FROM {$this->table_name} 
+                    SUM(CASE WHEN record_type = 'error' THEN 1 ELSE 0 END) as error_count,
+                    (SELECT variable_data FROM {$this->table_name} t2 
+                     WHERE t2.session_id = t1.session_id AND t2.record_type = 'request_start' 
+                     ORDER BY created_at ASC LIMIT 1) as request_start_data
+             FROM {$this->table_name} t1
              GROUP BY session_id, request_id 
              ORDER BY start_time DESC 
              LIMIT %d",
             $limit
         ));
+        
+        // 解析client_ip从variable_data中
+        foreach ($sessions as $session) {
+            $session->client_ip = '-';
+            if ($session->request_start_data) {
+                $start_data = json_decode($session->request_start_data, true);
+                if (isset($start_data['server_info']['REMOTE_ADDR'])) {
+                    $session->client_ip = $start_data['server_info']['REMOTE_ADDR'];
+                }
+            }
+        }
+        
+        return $sessions;
     }
     
     /**

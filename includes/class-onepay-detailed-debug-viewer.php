@@ -166,6 +166,7 @@ class OnePay_Detailed_Debug_Viewer {
                     <tr>
                         <th>会话ID</th>
                         <th>请求ID</th>
+                        <th>客户端IP</th>
                         <th>开始时间</th>
                         <th>结束时间</th>
                         <th>记录数</th>
@@ -181,6 +182,9 @@ class OnePay_Detailed_Debug_Viewer {
                         </td>
                         <td>
                             <code><?php echo esc_html(substr($session->request_id ?? '', -12)); ?></code>
+                        </td>
+                        <td>
+                            <code><?php echo esc_html($session->client_ip ?? '-'); ?></code>
                         </td>
                         <td><?php echo date('Y-m-d H:i:s', strtotime($session->start_time)); ?></td>
                         <td><?php echo date('Y-m-d H:i:s', strtotime($session->end_time)); ?></td>

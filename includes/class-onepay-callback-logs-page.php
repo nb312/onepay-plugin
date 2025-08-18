@@ -36,6 +36,7 @@ class OnePay_Callback_Logs_Page {
         $status = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : '';
         $date_from = isset($_GET['date_from']) ? sanitize_text_field($_GET['date_from']) : '';
         $date_to = isset($_GET['date_to']) ? sanitize_text_field($_GET['date_to']) : '';
+        $whitelist_status = isset($_GET['whitelist_status']) ? sanitize_text_field($_GET['whitelist_status']) : '';
         
         // 构建查询参数
         $query_args = array(
@@ -57,6 +58,9 @@ class OnePay_Callback_Logs_Page {
         if ($date_to) {
             $query_args['date_to'] = $date_to . ' 23:59:59';
         }
+        if ($whitelist_status !== '') {
+            $query_args['is_whitelisted'] = ($whitelist_status === '1') ? 1 : 0;
+        }
         
         // 获取日志数据
         $logs = $this->debug_logger->get_logs($query_args);
@@ -69,7 +73,7 @@ class OnePay_Callback_Logs_Page {
         <div class="wrap">
             <h1><?php _e('OnePay回调日志', 'onepay'); ?></h1>
             
-            <?php $this->display_filters($log_type, $status, $date_from, $date_to); ?>
+            <?php $this->display_filters($log_type, $status, $date_from, $date_to, $whitelist_status); ?>
             
             <?php $this->display_statistics(); ?>
             
@@ -86,7 +90,7 @@ class OnePay_Callback_Logs_Page {
     /**
      * 显示筛选器
      */
-    private function display_filters($log_type, $status, $date_from, $date_to) {
+    private function display_filters($log_type, $status, $date_from, $date_to, $whitelist_status = '') {
         ?>
         <div class="onepay-filters">
             <form method="get" action="">
@@ -105,6 +109,12 @@ class OnePay_Callback_Logs_Page {
                     <option value="success" <?php selected($status, 'success'); ?>><?php _e('成功', 'onepay'); ?></option>
                     <option value="error" <?php selected($status, 'error'); ?>><?php _e('错误', 'onepay'); ?></option>
                     <option value="signature_failed" <?php selected($status, 'signature_failed'); ?>><?php _e('验签失败', 'onepay'); ?></option>
+                </select>
+                
+                <select name="whitelist_status">
+                    <option value=""><?php _e('所有IP', 'onepay'); ?></option>
+                    <option value="1" <?php selected($_GET['whitelist_status'] ?? '', '1'); ?>><?php _e('✅ 白名单IP', 'onepay'); ?></option>
+                    <option value="0" <?php selected($_GET['whitelist_status'] ?? '', '0'); ?>><?php _e('⚠️ 非白名单IP', 'onepay'); ?></option>
                 </select>
                 
                 <input type="date" name="date_from" value="<?php echo esc_attr($date_from); ?>" placeholder="<?php _e('开始日期', 'onepay'); ?>">
@@ -188,6 +198,8 @@ class OnePay_Callback_Logs_Page {
                     <tr>
                         <th scope="col"><?php _e('时间', 'onepay'); ?></th>
                         <th scope="col"><?php _e('类型', 'onepay'); ?></th>
+                        <th scope="col"><?php _e('服务器IP', 'onepay'); ?></th>
+                        <th scope="col"><?php _e('白名单', 'onepay'); ?></th>
                         <th scope="col"><?php _e('WordPress订单', 'onepay'); ?></th>
                         <th scope="col"><?php _e('商户订单号', 'onepay'); ?></th>
                         <th scope="col"><?php _e('OnePay订单号', 'onepay'); ?></th>
@@ -203,7 +215,7 @@ class OnePay_Callback_Logs_Page {
                 <tbody>
                     <?php if (empty($logs)): ?>
                         <tr>
-                            <td colspan="12" class="no-items"><?php _e('暂无回调记录', 'onepay'); ?></td>
+                            <td colspan="14" class="no-items"><?php _e('暂无回调记录', 'onepay'); ?></td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($logs as $log): ?>
@@ -284,6 +296,29 @@ class OnePay_Callback_Logs_Page {
                     <?php echo esc_html($this->get_log_type_label($log->log_type)); ?>
                 </span>
             </td>
+            <td>
+                <?php 
+                // 显示服务器IP
+                $server_ip = $log->server_ip ?: ($log->user_ip ?: '-');
+                echo esc_html($server_ip);
+                ?>
+            </td>
+            <td>
+                <?php 
+                // 显示白名单状态
+                if (isset($log->is_whitelisted)) {
+                    if ($log->is_whitelisted == 1) {
+                        echo '<span class="whitelist-status whitelist-yes" title="' . esc_attr($log->whitelist_check_msg ?: '在白名单中') . '">✅ 白名单</span>';
+                    } elseif ($log->is_whitelisted == 0) {
+                        echo '<span class="whitelist-status whitelist-no" title="' . esc_attr($log->whitelist_check_msg ?: '不在白名单中') . '">⚠️ 非白名单</span>';
+                    } else {
+                        echo '<span class="whitelist-status whitelist-unknown">❓ 未检查</span>';
+                    }
+                } else {
+                    echo '<span class="whitelist-status whitelist-unknown">❓ 未检查</span>';
+                }
+                ?>
+            </td>
             <td><?php echo $wp_order_info['display']; ?></td>
             <td><?php echo esc_html($merchant_order_no ?: '-'); ?></td>
             <td><?php echo esc_html($onepay_order_no ?: '-'); ?></td>
@@ -339,6 +374,9 @@ class OnePay_Callback_Logs_Page {
         }
         if (!empty($_GET['date_to'])) {
             $query_params['date_to'] = $_GET['date_to'];
+        }
+        if (!empty($_GET['whitelist_status'])) {
+            $query_params['whitelist_status'] = $_GET['whitelist_status'];
         }
         
         ?>

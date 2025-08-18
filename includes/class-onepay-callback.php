@@ -64,6 +64,16 @@ class OnePay_Callback {
             $client_ip = $this->get_client_ip();
             $this->detailed_debug->log_variable('client_ip', $client_ip, '客户端IP地址');
             
+            // 进行IP白名单检查
+            $this->detailed_debug->log_debug('开始IP白名单检查');
+            require_once ONEPAY_PLUGIN_PATH . 'includes/class-onepay-ip-whitelist.php';
+            $ip_whitelist = OnePay_IP_Whitelist::get_instance();
+            $is_whitelisted = $ip_whitelist->is_ip_whitelisted($client_ip);
+            $whitelist_msg = $is_whitelisted ? '✅ IP在白名单中' : '⚠️ IP不在白名单中';
+            
+            $this->detailed_debug->log_variable('is_whitelisted', $is_whitelisted, 'IP白名单检查结果');
+            $this->detailed_debug->log_variable('whitelist_msg', $whitelist_msg, '白名单检查消息');
+            
             // 第一时间记录回调接收（无论数据是否有效）
             $this->logger->info('异步回调请求开始处理', array(
                 'client_ip' => $client_ip,
@@ -94,7 +104,10 @@ class OnePay_Callback {
                     $callback_data ?: $raw_data, 
                     'pending', // 标记为待验签状态，而不是null
                     '回调已接收，开始验签处理', 
-                    $client_ip
+                    $client_ip,
+                    null, // order_id
+                    $is_whitelisted, // IP白名单检查结果
+                    $whitelist_msg // IP白名单检查消息
                 );
                 
                 // 步骤1: 记录回调接收
@@ -130,7 +143,15 @@ class OnePay_Callback {
                 $this->detailed_debug->log_condition('!$callback_id', !$callback_id, array('callback_id' => $callback_id));
                 if (!$callback_id) {
                     $this->detailed_debug->log_debug('创建错误回调记录');
-                    $callback_id = $this->debug_logger->log_async_callback(null, false, $error_msg, $client_ip);
+                    $callback_id = $this->debug_logger->log_async_callback(
+                        null, 
+                        false, 
+                        $error_msg, 
+                        $client_ip,
+                        null, // order_id
+                        isset($is_whitelisted) ? $is_whitelisted : null, // IP白名单检查结果
+                        isset($whitelist_msg) ? $whitelist_msg : null // IP白名单检查消息
+                    );
                     $this->detailed_debug->log_variable('callback_id', $callback_id, '新创建的回调ID');
                 }
                 
@@ -612,7 +633,10 @@ class OnePay_Callback {
                     isset($callback_data) ? $callback_data : $raw_data, 
                     false, 
                     $error_msg, 
-                    $this->get_client_ip()
+                    $this->get_client_ip(),
+                    null, // order_id
+                    null, // 异常情况下无法检查白名单
+                    '异常发生' // 异常消息
                 );
             }
             

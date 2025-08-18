@@ -84,7 +84,7 @@ class WC_Gateway_OnePay extends WC_Payment_Gateway {
         $this->merchant_no          = $this->get_option('merchant_no', '');
         $this->private_key          = $this->get_option('private_key', '');
         $this->platform_public_key  = $this->get_option('platform_public_key', '');
-        $this->api_url              = $this->testmode ? $this->get_option('test_api_url', 'http://110.42.152.219:8083/nh-gateway/v2/card/payment') : $this->get_option('live_api_url', 'https://api.onepay.com/v2/card/payment');
+        $this->api_url              = $this->testmode ? $this->get_option('test_api_url', 'http://110.42.152.219:8083/nh-gateway/v2/card/payment') : $this->get_option('live_api_url', 'https://gateway.lapay.cc/nh-gateway/v2/card/payment');
         $this->hide_blocks_warning  = 'yes' === $this->get_option('hide_blocks_warning', 'no');
         
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
@@ -1117,6 +1117,44 @@ class WC_Gateway_OnePay extends WC_Payment_Gateway {
                 'description' => __('如果您不使用WooCommerce区块结账，可以隐藏相关的兼容性提示。', 'onepay'),
                 'default' => 'no',
                 'desc_tip'    => true,
+            ),
+            'ip_whitelist_section' => array(
+                'title'       => __('IP白名单配置', 'onepay'),
+                'type'        => 'title',
+                'description' => __('<div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                    <h4 style="margin-top: 0; color: #856404;">💡 IP白名单说明：</h4>
+                    <p>此功能仅用于<strong>记录和显示</strong>回调请求的IP地址是否在白名单中，<strong>不会阻止</strong>任何回调处理。</p>
+                    <ul>
+                        <li>✅ 启用后，回调日志中会显示IP是否为白名单IP</li>
+                        <li>📝 默认包含OnePay官方服务器IP地址</li>
+                        <li>🔍 可在后台查看所有回调请求的IP来源</li>
+                    </ul>
+                </div>', 'onepay'),
+            ),
+            'ip_whitelist_enabled' => array(
+                'title'   => __('启用IP白名单记录', 'onepay'),
+                'label'   => __('启用IP白名单检查和记录功能', 'onepay'),
+                'type'    => 'checkbox',
+                'description' => __('启用后，系统会检查回调IP是否在白名单中，并在日志中记录结果。不会影响支付处理。', 'onepay'),
+                'default' => 'yes',
+                'desc_tip'    => true,
+            ),
+            'ip_whitelist_include_defaults' => array(
+                'title'   => __('包含默认IP', 'onepay'),
+                'label'   => __('包含OnePay官方服务器IP地址', 'onepay'),
+                'type'    => 'checkbox',
+                'description' => __('默认包含以下OnePay官方IP：132.145.68.50, 152.67.142.250, 144.21.50.178, 150.230.124.245, 140.238.90.149, 140.238.97.36', 'onepay'),
+                'default' => 'yes',
+                'desc_tip'    => true,
+            ),
+            'ip_whitelist' => array(
+                'title'       => __('自定义IP白名单', 'onepay'),
+                'type'        => 'textarea',
+                'description' => __('每行输入一个IP地址或CIDR网段，支持IPv4格式。例如：192.168.1.1 或 192.168.1.0/24', 'onepay'),
+                'default'     => '',
+                'desc_tip'    => true,
+                'css'         => 'height: 100px; font-family: monospace;',
+                'placeholder' => "# 示例IP地址（每行一个）\n192.168.1.100\n10.0.0.0/8\n# 注释行以#开头"
             ),
             'ssl_note' => array(
                 'title'       => __('SSL Information', 'onepay'),

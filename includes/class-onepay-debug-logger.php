@@ -40,6 +40,9 @@ class OnePay_Debug_Logger {
         
         // 创建数据库表
         $this->create_table();
+        
+        // 升级数据库表结构（如果需要）
+        $this->upgrade_table_if_needed();
     }
     
     /**
@@ -60,6 +63,9 @@ class OnePay_Debug_Logger {
             user_name varchar(100) DEFAULT NULL,
             user_email varchar(100) DEFAULT NULL,
             user_ip varchar(45) DEFAULT NULL,
+            server_ip varchar(45) DEFAULT NULL COMMENT '服务器IP地址（回调来源IP）',
+            is_whitelisted tinyint(1) DEFAULT NULL COMMENT '是否在IP白名单中',
+            whitelist_check_msg varchar(255) DEFAULT NULL COMMENT 'IP白名单检查消息',
             amount decimal(10,2) DEFAULT NULL,
             currency varchar(10) DEFAULT NULL,
             payment_method varchar(50) DEFAULT NULL,
@@ -76,11 +82,43 @@ class OnePay_Debug_Logger {
             KEY idx_user_id (user_id),
             KEY idx_log_time (log_time),
             KEY idx_log_type (log_type),
-            KEY idx_status (status)
+            KEY idx_status (status),
+            KEY idx_server_ip (server_ip),
+            KEY idx_is_whitelisted (is_whitelisted)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+    }
+    
+    /**
+     * 升级数据库表结构（如果需要）
+     */
+    private function upgrade_table_if_needed() {
+        global $wpdb;
+        
+        // 检查新字段是否存在
+        $columns = $wpdb->get_results("SHOW COLUMNS FROM {$this->table_name}");
+        $column_names = array_column($columns, 'Field');
+        
+        $new_fields = array(
+            'server_ip' => "ADD COLUMN server_ip varchar(45) DEFAULT NULL COMMENT '服务器IP地址（回调来源IP）' AFTER user_ip",
+            'is_whitelisted' => "ADD COLUMN is_whitelisted tinyint(1) DEFAULT NULL COMMENT '是否在IP白名单中' AFTER server_ip",
+            'whitelist_check_msg' => "ADD COLUMN whitelist_check_msg varchar(255) DEFAULT NULL COMMENT 'IP白名单检查消息' AFTER is_whitelisted"
+        );
+        
+        foreach ($new_fields as $field_name => $alter_sql) {
+            if (!in_array($field_name, $column_names)) {
+                $wpdb->query("ALTER TABLE {$this->table_name} {$alter_sql}");
+                
+                // 添加索引
+                if ($field_name === 'server_ip') {
+                    $wpdb->query("ALTER TABLE {$this->table_name} ADD KEY idx_server_ip (server_ip)");
+                } elseif ($field_name === 'is_whitelisted') {
+                    $wpdb->query("ALTER TABLE {$this->table_name} ADD KEY idx_is_whitelisted (is_whitelisted)");
+                }
+            }
+        }
     }
     
     /**
@@ -100,6 +138,7 @@ class OnePay_Debug_Logger {
             'user_name' => $user->display_name ?: $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
             'user_email' => $order->get_billing_email(),
             'user_ip' => $this->get_client_ip(),
+            'server_ip' => $this->get_client_ip(), // 对于支付请求，记录客户端IP
             'amount' => $order->get_total(),
             'currency' => $order->get_currency(),
             'payment_method' => $payment_data['payment_method'] ?? '',
@@ -143,6 +182,7 @@ class OnePay_Debug_Logger {
             'log_type' => 'api_request',
             'order_id' => $order_id,
             'user_ip' => $this->get_client_ip(),
+            'server_ip' => $this->get_client_ip(), // 对于API请求，记录客户端IP
             'request_url' => $url,
             'request_data' => is_array($request_data) || is_object($request_data) ? 
                             json_encode($request_data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : 
@@ -222,6 +262,7 @@ class OnePay_Debug_Logger {
         $log_data = array(
             'log_type' => 'callback',
             'user_ip' => $client_ip,
+            'server_ip' => $client_ip, // 对于回调，记录服务器IP（来源IP）
             'request_data' => $raw_data,
             'status' => 'received',
             'extra_data' => json_encode(array(
@@ -242,7 +283,7 @@ class OnePay_Debug_Logger {
     /**
      * 记录异步回调到本地数据库
      */
-    public function log_async_callback($callback_data, $signature_valid, $message, $client_ip, $order_id = null) {
+    public function log_async_callback($callback_data, $signature_valid, $message, $client_ip, $order_id = null, $is_whitelisted = null, $whitelist_msg = null) {
         if ($this->debug_enabled !== 'yes') {
             return null;
         }
@@ -329,6 +370,9 @@ class OnePay_Debug_Logger {
             'user_name' => null,
             'user_email' => null,
             'user_ip' => $client_ip,
+            'server_ip' => $client_ip, // 服务器IP（回调来源IP）
+            'is_whitelisted' => $is_whitelisted, // IP白名单检查结果
+            'whitelist_check_msg' => $whitelist_msg, // IP白名单检查消息
             'amount' => $paid_amount ?: $order_amount,
             'currency' => $currency,
             'payment_method' => $pay_model,
@@ -624,6 +668,7 @@ class OnePay_Debug_Logger {
             'log_type' => 'error',
             'order_id' => $context['order_id'] ?? null,
             'user_ip' => $this->get_client_ip(),
+            'server_ip' => $this->get_client_ip(), // 对于错误日志，记录当前IP
             'error_message' => $error_message,
             'status' => 'error',
             'extra_data' => json_encode($context, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
@@ -643,31 +688,43 @@ class OnePay_Debug_Logger {
         $beijing_time = date('Y-m-d H:i:s', current_time('timestamp') + 8 * 3600);
         $data['log_time'] = $beijing_time;
         
-        $wpdb->insert(
-            $this->table_name,
-            $data,
-            array(
-                '%s', // log_time - 显式设置北京时间
-                '%s', // log_type
-                '%d', // order_id
-                '%s', // order_number
-                '%d', // user_id
-                '%s', // user_name
-                '%s', // user_email
-                '%s', // user_ip
-                '%f', // amount
-                '%s', // currency
-                '%s', // payment_method
-                '%s', // request_url
-                '%s', // request_data
-                '%s', // response_data
-                '%s', // response_code
-                '%s', // error_message
-                '%f', // execution_time
-                '%s', // status
-                '%s'  // extra_data
-            )
+        // 动态构建格式数组，确保字段顺序匹配
+        $format_mapping = array(
+            'log_time' => '%s',
+            'log_type' => '%s',
+            'order_id' => '%d',
+            'order_number' => '%s',
+            'user_id' => '%d',
+            'user_name' => '%s',
+            'user_email' => '%s',
+            'user_ip' => '%s',
+            'server_ip' => '%s',
+            'is_whitelisted' => '%d',
+            'whitelist_check_msg' => '%s',
+            'amount' => '%f',
+            'currency' => '%s',
+            'payment_method' => '%s',
+            'request_url' => '%s',
+            'request_data' => '%s',
+            'response_data' => '%s',
+            'response_code' => '%s',
+            'error_message' => '%s',
+            'execution_time' => '%f',
+            'status' => '%s',
+            'extra_data' => '%s'
         );
+        
+        // 只包含存在的字段和对应的格式
+        $formats = array();
+        foreach ($data as $key => $value) {
+            if (isset($format_mapping[$key])) {
+                $formats[] = $format_mapping[$key];
+            } else {
+                $formats[] = '%s'; // 默认字符串格式
+            }
+        }
+        
+        $wpdb->insert($this->table_name, $data, $formats);
         
         return $wpdb->insert_id;
     }
@@ -763,7 +820,8 @@ class OnePay_Debug_Logger {
             'status' => '',
             'order_id' => 0,
             'date_from' => '',
-            'date_to' => ''
+            'date_to' => '',
+            'is_whitelisted' => null
         );
         
         $args = wp_parse_args($args, $defaults);
@@ -788,6 +846,10 @@ class OnePay_Debug_Logger {
         
         if (!empty($args['date_to'])) {
             $where[] = $wpdb->prepare("log_time <= %s", $args['date_to']);
+        }
+        
+        if ($args['is_whitelisted'] !== null) {
+            $where[] = $wpdb->prepare("is_whitelisted = %d", $args['is_whitelisted']);
         }
         
         $where_clause = implode(' AND ', $where);

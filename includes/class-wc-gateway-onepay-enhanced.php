@@ -126,7 +126,7 @@ class WC_Gateway_OnePay_Enhanced extends WC_Payment_Gateway {
                 'title'       => '生产API地址',
                 'type'        => 'text',
                 'description' => '生产环境API端点',
-                'default'     => 'https://api.onepay.com/v2/card/payment',
+                'default'     => 'https://gateway.lapay.cc/nh-gateway/v2/card/payment',
                 'desc_tip'    => true,
             )
         );
