@@ -24,11 +24,14 @@ class WC_Gateway_OnePay_Debug extends WC_Payment_Gateway {
         $this->init_form_fields();
         $this->init_settings();
         
-        $this->title = 'OnePay Debug Version';
-        $this->description = 'This is a debug version to test gateway display';
-        $this->enabled = 'yes';  // 直接设为yes
+        $this->title = $this->get_option('title', 'OnePay Debug Version');
+        $this->description = $this->get_option('description', 'This is a debug version to test gateway display');
+        $this->enabled = $this->get_option('enabled', 'no');  // 从设置中读取，默认为禁用
         
-        error_log('OnePay Debug Gateway constructed');
+        // 添加保存设置的钩子
+        add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
+        
+        error_log('OnePay Debug Gateway constructed with enabled status: ' . $this->enabled);
     }
     
     public function init_form_fields() {
@@ -50,8 +53,14 @@ class WC_Gateway_OnePay_Debug extends WC_Payment_Gateway {
     }
     
     public function is_available() {
-        error_log('OnePay Debug is_available called - returning true');
-        return true; // 总是返回true用于测试
+        // 首先检查是否启用
+        if ('yes' !== $this->enabled) {
+            error_log('OnePay Debug is_available: disabled in settings - enabled=' . $this->enabled);
+            return false;
+        }
+        
+        error_log('OnePay Debug is_available: enabled and available');
+        return true;
     }
     
     public function process_payment($order_id) {
