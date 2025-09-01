@@ -1,0 +1,480 @@
+/**
+ * OnePay 结账页面支付选项自定义样式 - 现代卡片设计
+ * 实现独立卡片式布局，每个支付方式独立展示
+ * 优化视觉层次和交互体验
+ */
+
+/* ========================= 核心布局重写 ========================= */
+
+/* 重置支付方法列表的基础样式 - 卡片网格布局 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods,
+.woocommerce-page .wc_payment_methods.payment_methods.methods,
+.woocommerce form .wc_payment_methods.payment_methods.methods {
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 16px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* 支付方法项的卡片样式 - 独立卡片设计 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li,
+.woocommerce-page .wc_payment_methods.payment_methods.methods li,
+.woocommerce form .wc_payment_methods.payment_methods.methods li {
+    position: relative !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    border: 2px solid #e8e8e8 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    list-style: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    min-height: 140px !important;
+    box-sizing: border-box !important;
+    float: none !important;
+    clear: both !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* 悬停效果 - 卡片抬起效果 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:hover,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:hover {
+    border-color: #4CAF50 !important;
+    box-shadow: 0 8px 24px rgba(76, 175, 80, 0.15) !important;
+    transform: translateY(-2px) !important;
+    background: #fafffe !important;
+}
+
+/* 隐藏原始的radio按钮 - 超高优先级 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li input[type="radio"],
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li input[type="radio"],
+.woocommerce-page .wc_payment_methods.payment_methods.methods li input[type="radio"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    pointer-events: none !important;
+}
+
+/* ========================= 标签布局重构 ========================= */
+
+/* 支付方法标签的容器 - 垂直居中布局 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li label,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li label,
+.woocommerce-page .wc_payment_methods.payment_methods.methods li label,
+.woocommerce form .wc_payment_methods.payment_methods.methods li label {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    font-weight: normal !important;
+    line-height: 1.4 !important;
+    color: #333 !important;
+    text-decoration: none !important;
+    border: none !important;
+    background: none !important;
+    gap: 12px !important;
+}
+
+/* ========================= 图标容器优化 ========================= */
+
+/* 图标容器居中显示 */
+.woocommerce-checkout .wc_payment_methods li .onepay-card-icons,
+.woocommerce-checkout .wc_payment_methods li .onepay-payment-icons,
+body.woocommerce-checkout .wc_payment_methods li .onepay-card-icons,
+body.woocommerce-checkout .wc_payment_methods li .onepay-payment-icons,
+.woocommerce-page .wc_payment_methods li .onepay-card-icons,
+.woocommerce-page .wc_payment_methods li .onepay-payment-icons {
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+/* 支付方法图标样式 - 大图标设计 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li label img,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li label img,
+.woocommerce-page .wc_payment_methods.payment_methods.methods li label img,
+.woocommerce-checkout .wc_payment_methods li .onepay-payment-icon,
+.woocommerce-checkout .wc_payment_methods li .onepay-card-icon,
+body.woocommerce-checkout .wc_payment_methods li .onepay-payment-icon,
+body.woocommerce-checkout .wc_payment_methods li .onepay-card-icon,
+.woocommerce-checkout .wc_payment_methods li .payment-method-icon {
+    width: auto !important;
+    height: 48px !important; /* 更大的图标 */
+    max-height: 48px !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+    object-fit: contain !important;
+    background: transparent !important;
+    padding: 4px !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    flex-shrink: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* 支付方法文字样式 - 居中显示 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li label .payment-method-text,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li label .payment-method-text {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #2c3e50 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    word-break: break-word !important;
+}
+
+/* ========================= 选中指示器 ========================= */
+
+/* 右上角选中标记 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li::before,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li::before,
+.woocommerce-page .wc_payment_methods.payment_methods.methods li::before {
+    content: '✓' !important;
+    position: absolute !important;
+    top: 12px !important;
+    right: 12px !important;
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 50% !important;
+    background: #4CAF50 !important;
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    opacity: 0 !important;
+    transform: scale(0.8) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    z-index: 10 !important;
+}
+
+/* 选中状态显示标记 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:has(input:checked)::before,
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li.selected::before,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:has(input:checked)::before,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li.selected::before {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+}
+
+/* ========================= 交互状态 ========================= */
+
+/* 选中状态的容器样式 - 强调边框和背景 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li.selected,
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:has(input:checked),
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li.selected,
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:has(input:checked) {
+    border-color: #4CAF50 !important;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%) !important;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.2) !important;
+}
+
+/* 禁用状态 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:has(input:disabled),
+body.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:has(input:disabled) {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+/* ========================= OnePay特定样式优化 ========================= */
+
+/* OnePay特定网关的图标样式 - 大图标设计 */
+.woocommerce-checkout .wc_payment_methods li.payment_method_onepay_fps label img,
+.woocommerce-checkout .wc_payment_methods li.payment_method_onepay_russian_card label img,
+.woocommerce-checkout .wc_payment_methods li.payment_method_onepay_cards label img,
+.woocommerce-checkout .wc_payment_methods li.payment_method_onepay_visa label img,
+.woocommerce-checkout .wc_payment_methods li.payment_method_onepay_mastercard label img,
+body.woocommerce-checkout .wc_payment_methods li[class*="payment_method_onepay"] label img,
+.woocommerce-checkout .wc_payment_methods li[class*="payment_method_onepay"] label img,
+.woocommerce-checkout .wc_payment_methods li[class*="payment_method_payssion"] label img {
+    background: transparent !important;
+    padding: 4px !important;
+    border-radius: 8px !important;
+    width: auto !important;
+    height: 48px !important; /* 更大的图标 */
+    max-height: 48px !important;
+    border: none !important;
+    box-shadow: none !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+/* WoodMart主题特定兼容性优化 */
+body.theme-woodmart .woocommerce-checkout .wc_payment_methods li[class*="payment_method_onepay"] label img,
+.woodmart-theme .woocommerce-checkout .wc_payment_methods li[class*="payment_method_onepay"] label img,
+body.theme-woodmart .woocommerce-checkout .wc_payment_methods li[class*="payment_method_payssion"] label img {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+    margin: 0 !important;
+    height: 48px !important;
+}
+
+/* ========================= 支付方法详情 ========================= */
+
+/* 支付方法详情容器 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .payment_box {
+    margin-top: 16px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    display: none !important; /* 默认隐藏 */
+}
+
+/* 显示支付方法详情 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li.selected .payment_box,
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:has(input:checked) .payment_box {
+    display: block !important;
+}
+
+/* 信用卡表单样式 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form {
+    margin: 0 !important;
+    padding: 16px !important;
+    background: #fafafa !important;
+    border: 1px solid #e6e6e6 !important;
+    border-radius: 6px !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form .form-row {
+    margin-bottom: 15px !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form .form-row:last-child {
+    margin-bottom: 0 !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form label {
+    display: block !important;
+    font-weight: 600 !important;
+    margin-bottom: 5px !important;
+    color: #333 !important;
+    font-size: 14px !important;
+    justify-content: flex-start !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form label::after {
+    display: none !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form input[type="text"] {
+    width: 100% !important;
+    padding: 10px 12px !important;
+    border: 2px solid #ddd !important;
+    border-radius: 4px !important;
+    font-size: 16px !important;
+    transition: border-color 0.3s ease !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form input[type="text"]:focus {
+    outline: none !important;
+    border-color: #4CAF50 !important;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2) !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form .form-row-first {
+    float: left !important;
+    width: 48% !important;
+    margin-right: 4% !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form .form-row-last {
+    float: right !important;
+    width: 48% !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form .clear {
+    clear: both !important;
+}
+
+/* ========================= 移动端适配 ========================= */
+
+@media (max-width: 768px) {
+    /* 移动端使用单列布局 */
+    .woocommerce-checkout .wc_payment_methods.payment_methods.methods {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+    
+    .woocommerce-checkout .wc_payment_methods.payment_methods.methods li {
+        padding: 16px !important;
+        min-height: 100px !important;
+    }
+    
+    .woocommerce-checkout .wc_payment_methods li img,
+    .woocommerce-checkout .wc_payment_methods li .onepay-payment-icon,
+    .woocommerce-checkout .wc_payment_methods li .onepay-card-icon,
+    .woocommerce-checkout .wc_payment_methods li .payment-method-icon {
+        height: 36px !important;
+        max-height: 36px !important;
+    }
+    
+    .woocommerce-checkout .wc_payment_methods.payment_methods.methods li label .payment-method-text {
+        font-size: 13px !important;
+    }
+
+    /* 移动端信用卡表单适配 */
+    .woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form .form-row-first,
+    .woocommerce-checkout .wc_payment_methods.payment_methods.methods li .wc-credit-card-form .form-row-last {
+        float: none !important;
+        width: 100% !important;
+        margin-right: 0 !important;
+    }
+}
+
+/* ========================= 后备兼容方案 ========================= */
+
+/* 如果上述选择器都不生效，使用最强的后备方案 */
+.woocommerce div.product form.cart .wc_payment_methods li label,
+.woocommerce-page div.product form.cart .wc_payment_methods li label,
+div.woocommerce .wc_payment_methods li label,
+div.woocommerce-page .wc_payment_methods li label {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+}
+
+/* 强制覆盖任何可能的图标容器对齐 */
+.wc_payment_methods .onepay-card-icons,
+.wc_payment_methods .onepay-payment-icons,
+.wc_payment_methods .payment-method-icons,
+.payment_methods .onepay-card-icons,
+.payment_methods .onepay-payment-icons {
+    margin: 0 !important;
+    float: none !important;
+    text-align: center !important;
+    justify-content: center !important;
+}
+
+/* 确保所有图标都居中显示 */
+.wc_payment_methods img,
+.payment_methods img,
+.wc_payment_methods .onepay-payment-icon,
+.wc_payment_methods .onepay-card-icon,
+.wc_payment_methods .payment-method-icon {
+    margin: 0 auto !important;
+    float: none !important;
+    display: block !important;
+}
+
+/* ========================= 增强的视觉效果 ========================= */
+
+/* 卡片加载动画 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li {
+    animation: fadeInUp 0.4s ease-out backwards !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:nth-child(1) {
+    animation-delay: 0.1s !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:nth-child(2) {
+    animation-delay: 0.2s !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:nth-child(3) {
+    animation-delay: 0.3s !important;
+}
+
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:nth-child(4) {
+    animation-delay: 0.4s !important;
+}
+
+/* 点击时的缩放效果 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:active {
+    transform: scale(0.98) !important;
+    transition: transform 0.1s ease !important;
+}
+
+/* 支付方法标题优化 */
+.woocommerce-checkout .payment_methods_title,
+.woocommerce-checkout h3#order_review_heading {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: #2c3e50 !important;
+    margin-bottom: 20px !important;
+    padding-bottom: 10px !important;
+    border-bottom: 2px solid #e8e8e8 !important;
+}
+
+/* 支付描述文字优化 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .payment_box p {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    color: #666 !important;
+    margin: 12px 0 0 0 !important;
+    padding: 12px !important;
+    background: #f8f9fa !important;
+    border-radius: 6px !important;
+    border-left: 3px solid #4CAF50 !important;
+}
+
+/* 确保支付描述文字不影响卡片布局 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li .payment_box {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin-top: 8px !important;
+    z-index: 100 !important;
+    background: white !important;
+    border: 1px solid #e8e8e8 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    padding: 16px !important;
+}
+
+/* 为了适应绝对定位的描述框，调整容器 */
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li.selected,
+.woocommerce-checkout .wc_payment_methods.payment_methods.methods li:has(.payment_box:not([style*="display: none"])) {
+    margin-bottom: 120px !important;
+}
+
+/* 优化支付方法的分隔线效果 */
+.woocommerce-checkout .payment_methods_separator {
+    display: none !important;
+}

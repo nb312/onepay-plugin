@@ -3,7 +3,7 @@
  * Plugin Name: OnePay Payment Gateway
  * Plugin URI: https://onepay.com/
  * Description: OnePay payment gateway for WooCommerce with RSA signature verification, supporting FPS (SBP) and card payments for Russian market.
- * Version: 1.0.0
+ * Version: 1.0.5
  * Author: OnePay Integration
  * Author URI: https://onepay.com/
  * Text Domain: onepay
@@ -29,7 +29,7 @@ if (!defined('ABSPATH')) {
 define('ONEPAY_PLUGIN_FILE', __FILE__);
 define('ONEPAY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('ONEPAY_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('ONEPAY_VERSION', '1.0.0');
+define('ONEPAY_VERSION', '1.0.5');
 
 class OnePay_Plugin {
     
